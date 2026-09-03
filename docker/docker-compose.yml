@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/image-backend/Dockerfile
+    container_name: taskflow-backend
+    working_dir: /var/www/html
+    volumes:
+      - ../app/backend:/var/www/html
+      - ../.env:/var/www/html/.env
+    ports:
+      - 9000
+    env_file:
+      - ../.env
+
+  nginx:
+    image: nginx:alpine
+    container_name: taskflow-nginx
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - ../app/backend:/var/www/html:ro
+      - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+
