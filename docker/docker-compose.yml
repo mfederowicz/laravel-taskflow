@@ -13,6 +13,19 @@ services:
     env_file:
       - ../.env
 
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/image-frontend/Dockerfile
+    container_name: taskflow-frontend
+    working_dir: /app
+    volumes:
+      - ../app/frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 3000
+
   nginx:
     image: nginx:alpine
     container_name: taskflow-nginx
@@ -23,21 +36,6 @@ services:
       - ./configs/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
-
-  frontend:
-    build:
-      context: ..
-      dockerfile: docker/image-frontend/Dockerfile
-    container_name: taskflow-frontend
-    working_dir: /app
-    volumes:
-      - ../app/frontend:/app
-      - frontend_node_modules:/app/node_modules
-    ports:
-      - "${FRONTEND_PORT:-3000}:3000"
-    environment:
-      NUXT_HOST: 0.0.0.0
-      NUXT_PORT: 3000
 
 volumes:
   frontend_node_modules:
