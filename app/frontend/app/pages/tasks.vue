@@ -211,26 +211,11 @@
 </template>
 
 <script setup lang="ts">
-interface Task {
-  id: number
-  title: string
-  description: string | null
-  status: string
-  priority: string
-  due_date: string | null
-}
-
-interface TasksResponse {
-  data: Task[]
-  meta: {
-    current_page: number
-    last_page: number
-  }
-}
-
-interface TaskResponse {
-  data: Task
-}
+import type {
+  Task,
+  TaskResponse,
+  TasksResponse,
+} from '~/types/task'
 
 const { getToken, logout } = useAuth()
 
