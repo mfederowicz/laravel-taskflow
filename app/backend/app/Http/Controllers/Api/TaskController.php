@@ -15,7 +15,8 @@ class TaskController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        $tasks = Task::query()
+        $tasks = $request->user()
+            ->tasks()
             ->with('user')
             ->when(
                 $request->status,
@@ -33,7 +34,9 @@ class TaskController extends Controller
 
     public function store(StoreTaskRequest $request): JsonResponse
     {
-        $task = Task::create($request->validated());
+        $task = $request->user()->tasks()->create(
+            $request->validated()
+        );
 
         return response()->json([
             'data' => new TaskResource($task->load('user')),
