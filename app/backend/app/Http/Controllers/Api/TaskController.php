@@ -34,12 +34,23 @@ class TaskController extends Controller
 
     public function store(StoreTaskRequest $request): JsonResponse
     {
-        $task = $request->user()->tasks()->create(
-            $request->validated()
-        );
+        $validated = $request->validated();
+
+        $project = $request->user()
+            ->projects()
+            ->findOrFail($validated['project_id']);
+
+        $task = $project->tasks()->create([
+            'user_id' => $request->user()->id,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'status' => $validated['status'],
+            'priority' => $validated['priority'],
+            'due_date' => $validated['due_date'] ?? null,
+        ]);
 
         return response()->json([
-            'data' => new TaskResource($task->load('user')),
+            'data' => new TaskResource($task->load(['user', 'project'])),
         ], 201);
     }
 
@@ -50,7 +61,7 @@ class TaskController extends Controller
         $task->update($request->validated());
 
         return response()->json([
-            'data' => new TaskResource($task->load('user')),
+            'data' => new TaskResource($task->load(['user', 'project'])),
         ]);
     }
 
@@ -66,6 +77,6 @@ class TaskController extends Controller
     public function show(Task $task): TaskResource
     {
         $this->authorize('view', $task);
-        return new TaskResource($task->load('user'));
+        return new TaskResource($task->load(['user', 'project']));
     }
 }
