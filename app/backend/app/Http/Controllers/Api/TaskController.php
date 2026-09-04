@@ -45,6 +45,8 @@ class TaskController extends Controller
 
     public function update(UpdateTaskRequest $request, Task $task): JsonResponse
     {
+        $this->authorize('update', $task);
+
         $task->update($request->validated());
 
         return response()->json([
@@ -54,6 +56,8 @@ class TaskController extends Controller
 
     public function destroy(Task $task): JsonResponse
     {
+        $this->authorize('delete', $task);
+
         $task->delete();
 
         return response()->json(null, 204);
@@ -61,6 +65,7 @@ class TaskController extends Controller
 
     public function show(Task $task): TaskResource
     {
+        $this->authorize('view', $task);
         return new TaskResource($task->load('user'));
     }
 }
