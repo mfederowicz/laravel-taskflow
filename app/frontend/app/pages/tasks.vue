@@ -63,7 +63,23 @@
         {{ createError }}
       </p>
     </form>
+    <div>
+      <label for="filter-status">Status</label>
+      <select id="filter-status" v-model="filters.status" @change="loadTasksWithFilters">
+        <option value="">All</option>
+        <option value="pending">Pending</option>
+        <option value="in_progress">In progress</option>
+        <option value="completed">Completed</option>
+      </select>
 
+      <label for="filter-priority">Priority</label>
+      <select id="filter-priority" v-model="filters.priority" @change="loadTasksWithFilters">
+        <option value="">All</option>
+        <option value="low">Low</option>
+        <option value="medium">Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
     <hr>
 
     <p v-if="pending">Loading tasks...</p>
@@ -125,6 +141,11 @@ const form = reactive({
   due_date: '',
 })
 
+const filters = reactive({
+  status: '',
+  priority: '',
+})
+
 onMounted(async () => {
   const token = getToken()
 
@@ -144,6 +165,48 @@ async function loadTasks(token: string) {
         Accept: 'application/json',
       },
     })
+
+    tasks.value = response.data
+  } catch {
+    error.value = 'Failed to load tasks.'
+  } finally {
+    pending.value = false
+  }
+}
+
+async function loadTasksWithFilters() {
+  const token = getToken()
+
+  if (!token) {
+    await navigateTo('/login')
+    return
+  }
+
+  pending.value = true
+  error.value = ''
+
+  try {
+    const params = new URLSearchParams()
+
+    if (filters.status) {
+      params.set('status', filters.status)
+    }
+
+    if (filters.priority) {
+      params.set('priority', filters.priority)
+    }
+
+    const query = params.toString()
+
+    const response = await $fetch<TasksResponse>(
+        query ? `/api/tasks?${query}` : '/api/tasks',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+    )
 
     tasks.value = response.data
   } catch {
