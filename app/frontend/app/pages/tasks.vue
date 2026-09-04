@@ -18,6 +18,9 @@
             type="text"
             required
         >
+        <p v-if="validationErrors.title">
+          {{ validationErrors.title[0] }}
+        </p>
       </div>
 
       <div>
@@ -35,6 +38,9 @@
           <option value="in_progress">In progress</option>
           <option value="completed">Completed</option>
         </select>
+        <p v-if="validationErrors.status">
+          {{ validationErrors.status[0] }}
+        </p>
       </div>
 
       <div>
@@ -44,6 +50,9 @@
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
+        <p v-if="validationErrors.priority">
+          {{ validationErrors.priority[0] }}
+        </p>
       </div>
 
       <div>
@@ -53,6 +62,9 @@
             v-model="form.due_date"
             type="date"
         >
+        <p v-if="validationErrors.due_date">
+          {{ validationErrors.due_date[0] }}
+        </p>
       </div>
 
       <button type="submit" :disabled="creating">
@@ -157,6 +169,7 @@ const error = ref('')
 
 const creating = ref(false)
 const createError = ref('')
+const validationErrors = ref<Record<string, string[]>>({})
 
 const currentPage = ref(1)
 const lastPage = ref(1)
@@ -246,6 +259,7 @@ async function createTask() {
 
   creating.value = true
   createError.value = ''
+  validationErrors.value = {}
 
   try {
     const response = await $fetch<TaskResponse>('/api/tasks', {
@@ -271,8 +285,12 @@ async function createTask() {
     form.priority = 'medium'
     form.due_date = ''
   } catch (err: any) {
-    createError.value =
-        err?.data?.message ?? 'Failed to create task.'
+    if (err?.status === 422 && err?.data?.errors) {
+      validationErrors.value = err.data.errors
+    } else {
+      createError.value =
+          err?.data?.message ?? 'Failed to create task.'
+    }
   } finally {
     creating.value = false
   }
