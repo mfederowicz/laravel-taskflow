@@ -1,4 +1,7 @@
 <template>
+  <button type="button" @click="handleLogout">
+    Logout
+  </button>
   <main>
     <h1>My Tasks</h1>
 
@@ -101,7 +104,7 @@ interface TaskResponse {
   data: Task
 }
 
-const { getToken } = useAuth()
+const { getToken, logout } = useAuth()
 
 const tasks = ref<Task[]>([])
 const pending = ref(true)
@@ -246,5 +249,11 @@ async function deleteTask(taskId: number) {
   } catch {
     error.value = 'Failed to delete task.'
   }
+}
+
+
+async function handleLogout() {
+  await logout()
+  await navigateTo('/login')
 }
 </script>

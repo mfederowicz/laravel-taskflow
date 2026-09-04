@@ -23,7 +23,23 @@ export function useAuth() {
         return token.value
     }
 
-    function logout() {
+    async function logout() {
+        const currentToken = getToken()
+
+        if (currentToken) {
+            try {
+                await $fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${currentToken}`,
+                        Accept: 'application/json',
+                    },
+                })
+            } catch {
+                // Even if the API request fails, clear the local token.
+            }
+        }
+
         token.value = null
 
         if (import.meta.client) {
