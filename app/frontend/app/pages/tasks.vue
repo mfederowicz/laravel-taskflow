@@ -1,7 +1,11 @@
 <template>
-  <button type="button" @click="handleLogout">
-    Logout
-  </button>
+  <nav>
+    <strong>TaskFlow</strong>
+
+    <button type="button" @click="handleLogout">
+      Logout
+    </button>
+  </nav>
   <main>
     <h1>My Tasks</h1>
 
