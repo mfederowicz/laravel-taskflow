@@ -158,4 +158,14 @@ class TaskApiTest extends TestCase
                 'priority',
             ]);
     }
+
+    public function test_unauthenticated_user_cannot_access_tasks(): void
+    {
+        $this->getJson('/api/tasks')
+            ->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ]);
+    }
 }
