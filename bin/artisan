@@ -2,4 +2,27 @@
 
 set -e
 
-docker compose -f docker/docker-compose.yml exec backend php artisan "$@"
+COMMAND="$1"
+
+if [[ "$COMMAND" == make:* ]]; then
+    BEFORE="$(git status --porcelain -uall | awk '$1 == "??" {print substr($0, 4)}')"
+
+    docker compose -f docker/docker-compose.yml exec backend php artisan "$@"
+
+    AFTER="$(git status --porcelain -uall | awk '$1 == "??" {print substr($0, 4)}')"
+
+    NEW_FILES="$(comm -13 \
+        <(printf '%s\n' "$BEFORE" | sort) \
+        <(printf '%s\n' "$AFTER" | sort)
+    )"
+
+    if [[ -n "$NEW_FILES" ]]; then
+        while IFS= read -r file; do
+            if [[ -f "$file" ]]; then
+                sudo chown "$(id -u):$(id -g)" "$file"
+            fi
+        done <<< "$NEW_FILES"
+    fi
+else
+    docker compose -f docker/docker-compose.yml exec backend php artisan "$@"
+fi
