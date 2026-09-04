@@ -65,7 +65,7 @@
     </form>
     <div>
       <label for="filter-status">Status</label>
-      <select id="filter-status" v-model="filters.status" @change="loadTasksWithFilters">
+      <select id="filter-status" v-model="filters.status" @change="applyFilters">
         <option value="">All</option>
         <option value="pending">Pending</option>
         <option value="in_progress">In progress</option>
@@ -73,7 +73,7 @@
       </select>
 
       <label for="filter-priority">Priority</label>
-      <select id="filter-priority" v-model="filters.priority" @change="loadTasksWithFilters">
+      <select id="filter-priority" v-model="filters.priority" @change="applyFilters">
         <option value="">All</option>
         <option value="low">Low</option>
         <option value="medium">Medium</option>
@@ -103,6 +103,27 @@
         </button>
       </li>
     </ul>
+    <div v-if="lastPage > 1">
+      <button
+          type="button"
+          :disabled="currentPage === 1"
+          @click="previousPage"
+      >
+        Previous
+      </button>
+
+      <span>
+    Page {{ currentPage }} of {{ lastPage }}
+  </span>
+
+      <button
+          type="button"
+          :disabled="currentPage === lastPage"
+          @click="nextPage"
+      >
+        Next
+      </button>
+    </div>
   </main>
 </template>
 
@@ -118,6 +139,10 @@ interface Task {
 
 interface TasksResponse {
   data: Task[]
+  meta: {
+    current_page: number
+    last_page: number
+  }
 }
 
 interface TaskResponse {
@@ -132,6 +157,9 @@ const error = ref('')
 
 const creating = ref(false)
 const createError = ref('')
+
+const currentPage = ref(1)
+const lastPage = ref(1)
 
 const form = reactive({
   title: '',
@@ -154,25 +182,8 @@ onMounted(async () => {
     return
   }
 
-  await loadTasks(token)
+  await loadTasksWithFilters()
 })
-
-async function loadTasks(token: string) {
-  try {
-    const response = await $fetch<TasksResponse>('/api/tasks', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
-    })
-
-    tasks.value = response.data
-  } catch {
-    error.value = 'Failed to load tasks.'
-  } finally {
-    pending.value = false
-  }
-}
 
 async function loadTasksWithFilters() {
   const token = getToken()
@@ -196,6 +207,8 @@ async function loadTasksWithFilters() {
       params.set('priority', filters.priority)
     }
 
+    params.set('page', String(currentPage.value))
+
     const query = params.toString()
 
     const response = await $fetch<TasksResponse>(
@@ -209,11 +222,18 @@ async function loadTasksWithFilters() {
     )
 
     tasks.value = response.data
+    currentPage.value = response.meta.current_page
+    lastPage.value = response.meta.last_page
   } catch {
     error.value = 'Failed to load tasks.'
   } finally {
     pending.value = false
   }
+}
+
+async function applyFilters() {
+  currentPage.value = 1
+  await loadTasksWithFilters()
 }
 
 async function createTask() {
@@ -318,9 +338,26 @@ async function deleteTask(taskId: number) {
   }
 }
 
-
 async function handleLogout() {
   await logout()
   await navigateTo('/login')
+}
+
+async function previousPage() {
+  if (currentPage.value <= 1) {
+    return
+  }
+
+  currentPage.value--
+  await loadTasksWithFilters()
+}
+
+async function nextPage() {
+  if (currentPage.value >= lastPage.value) {
+    return
+  }
+
+  currentPage.value++
+  await loadTasksWithFilters()
 }
 </script>
