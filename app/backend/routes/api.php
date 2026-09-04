@@ -12,6 +12,7 @@ Route::get('/health', function () {
 });
 
 Route::get('/tasks', [TaskController::class, 'index']);
+Route::post('/tasks', [TaskController::class, 'store']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
