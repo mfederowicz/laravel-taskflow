@@ -102,17 +102,88 @@
 
     <ul v-else>
       <li v-for="task in tasks" :key="task.id">
-        <strong>{{ task.title }}</strong>
-        — {{ task.status }}
-        — {{ task.priority }}
+        <template v-if="editingTaskId === task.id">
+          <input
+              v-model="editForm.title"
+              type="text"
+          >
+          <p v-if="updateValidationErrors.title">
+            {{ updateValidationErrors.title[0] }}
+          </p>
 
-        <button type="button" @click="updateTask(task)">
-          Complete
-        </button>
+          <textarea
+              v-model="editForm.description"
+          />
+          <p v-if="updateValidationErrors.description">
+            {{ updateValidationErrors.description[0] }}
+          </p>
 
-        <button type="button" @click="deleteTask(task.id)">
-          Delete
-        </button>
+          <select v-model="editForm.status">
+            <option value="pending">Pending</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+          </select>
+          <p v-if="updateValidationErrors.status">
+            {{ updateValidationErrors.status[0] }}
+          </p>
+
+          <select v-model="editForm.priority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+          <p v-if="updateValidationErrors.priority">
+            {{ updateValidationErrors.priority[0] }}
+          </p>
+
+          <input
+              v-model="editForm.due_date"
+              type="date"
+          >
+          <p v-if="updateValidationErrors.due_date">
+            {{ updateValidationErrors.due_date[0] }}
+          </p>
+
+          <button
+              type="button"
+              :disabled="updating"
+              @click="updateTask"
+          >
+            {{ updating ? 'Saving...' : 'Save' }}
+          </button>
+
+          <button
+              type="button"
+              :disabled="updating"
+              @click="cancelEditing"
+          >
+            Cancel
+          </button>
+
+          <p v-if="updateError">
+            {{ updateError }}
+          </p>
+        </template>
+
+        <template v-else>
+          <strong>{{ task.title }}</strong>
+          — {{ task.status }}
+          — {{ task.priority }}
+
+          <button
+              type="button"
+              @click="startEditing(task)"
+          >
+            Edit
+          </button>
+
+          <button
+              type="button"
+              @click="deleteTask(task.id)"
+          >
+            Delete
+          </button>
+        </template>
       </li>
     </ul>
     <div v-if="lastPage > 1">
@@ -186,6 +257,20 @@ const filters = reactive({
   status: '',
   priority: '',
 })
+
+const editingTaskId = ref<number | null>(null)
+
+const editForm = reactive({
+  title: '',
+  description: '',
+  status: 'pending',
+  priority: 'medium',
+  due_date: '',
+})
+
+const updating = ref(false)
+const updateError = ref('')
+const updateValidationErrors = ref<Record<string, string[]>>({})
 
 onMounted(async () => {
   const token = getToken()
@@ -296,7 +381,7 @@ async function createTask() {
   }
 }
 
-async function updateTask(task: Task) {
+async function updateTask() {
   const token = getToken()
 
   if (!token) {
@@ -304,9 +389,17 @@ async function updateTask(task: Task) {
     return
   }
 
+  if (editingTaskId.value === null) {
+    return
+  }
+
+  updating.value = true
+  updateError.value = ''
+  updateValidationErrors.value = {}
+
   try {
     const response = await $fetch<TaskResponse>(
-        `/api/tasks/${task.id}`,
+        `/api/tasks/${editingTaskId.value}`,
         {
           method: 'PUT',
           headers: {
@@ -314,23 +407,36 @@ async function updateTask(task: Task) {
             Accept: 'application/json',
           },
           body: {
-            status: 'completed',
+            title: editForm.title,
+            description: editForm.description || null,
+            status: editForm.status,
+            priority: editForm.priority,
+            due_date: editForm.due_date || null,
           },
         }
     )
 
     const index = tasks.value.findIndex(
-        (item: Task) => item.id === task.id
+        (item: Task) => item.id === editingTaskId.value
     )
 
     if (index !== -1) {
       tasks.value[index] = response.data
     }
-  } catch {
-    error.value = 'Failed to update task.'
-  }
-}
 
+    editingTaskId.value = null
+  } catch (err: any) {
+    if (err?.status === 422 && err?.data?.errors) {
+      updateValidationErrors.value = err.data.errors
+    } else {
+      updateError.value =
+          err?.data?.message ?? 'Failed to update task.'
+    }
+  } finally {
+    updating.value = false
+  }
+
+}
 async function deleteTask(taskId: number) {
   const token = getToken()
 
@@ -377,5 +483,21 @@ async function nextPage() {
 
   currentPage.value++
   await loadTasksWithFilters()
+}
+function startEditing(task: Task) {
+  editingTaskId.value = task.id
+
+  editForm.title = task.title
+  editForm.description = task.description ?? ''
+  editForm.status = task.status
+  editForm.priority = task.priority
+  editForm.due_date = task.due_date ?? ''
+
+  updateError.value = ''
+  updateValidationErrors.value = {}
+}
+function cancelEditing() {
+  editingTaskId.value = null
+  updateError.value = ''
 }
 </script>
