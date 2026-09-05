@@ -1,10 +1,13 @@
 <template>
   <nav>
     <strong>TaskFlow</strong>
-
+    <NuxtLink to="/projects">
+      Projects
+    </NuxtLink>
     <button type="button" @click="handleLogout">
       Logout
     </button>
+
   </nav>
   <main>
     <h1>My Tasks</h1>
