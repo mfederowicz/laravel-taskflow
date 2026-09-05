@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,9 +17,14 @@ class TaskApiTest extends TestCase
     {
         $user = User::factory()->create();
 
+        $project = Project::factory()
+            ->for($user)
+            ->create();
+
         Task::factory()
             ->count(3)
             ->for($user)
+            ->for($project)
             ->create();
 
         Task::factory()
@@ -40,7 +46,12 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
+        $project = Project::factory()
+            ->for($user)
+            ->create();
+
         $response = $this->postJson('/api/tasks', [
+            'project_id' => $project->id,
             'title' => 'Test task',
             'description' => 'Test description',
             'status' => 'pending',
@@ -62,9 +73,13 @@ class TaskApiTest extends TestCase
     public function test_user_can_view_their_task(): void
     {
         $user = User::factory()->create();
+        $project = Project::factory()
+            ->for($user)
+            ->create();
 
         $task = Task::factory()
             ->for($user)
+            ->for($project)
             ->create();
 
         Sanctum::actingAs($user);
@@ -93,8 +108,13 @@ class TaskApiTest extends TestCase
     {
         $user = User::factory()->create();
 
+        $project = Project::factory()
+            ->for($user)
+            ->create();
+
         $task = Task::factory()
             ->for($user)
+            ->for($project)
             ->create();
 
         Sanctum::actingAs($user);
