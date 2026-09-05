@@ -1,14 +1,5 @@
 <template>
-  <nav>
-    <strong>TaskFlow</strong>
-    <NuxtLink to="/projects">
-      Projects
-    </NuxtLink>
-    <button type="button" @click="handleLogout">
-      Logout
-    </button>
-
-  </nav>
+  <AppNav />
   <main>
     <h1>My Tasks</h1>
 
@@ -136,7 +127,7 @@
     <ul v-else>
       <li v-for="task in tasks" :key="task.id">
         <template v-if="editingTaskId === task.id">
-          <div>
+          <div class="list-item-content">
             <label for="edit-project">Project</label>
 
             <select
@@ -160,63 +151,68 @@
             <p v-if="updateValidationErrors.project_id">
               {{ updateValidationErrors.project_id[0] }}
             </p>
+
+            <input
+                v-model="editForm.title"
+                type="text"
+            >
+            <p v-if="updateValidationErrors.title">
+              {{ updateValidationErrors.title[0] }}
+            </p>
+
+            <textarea
+                v-model="editForm.description"
+            />
+            <p v-if="updateValidationErrors.description">
+              {{ updateValidationErrors.description[0] }}
+            </p>
+
+            <select v-model="editForm.status">
+              <option value="pending">Pending</option>
+              <option value="in_progress">In progress</option>
+              <option value="completed">Completed</option>
+            </select>
+            <p v-if="updateValidationErrors.status">
+              {{ updateValidationErrors.status[0] }}
+            </p>
+
+            <select v-model="editForm.priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <p v-if="updateValidationErrors.priority">
+              {{ updateValidationErrors.priority[0] }}
+            </p>
+
+            <input
+                v-model="editForm.due_date"
+                type="date"
+            >
+            <p v-if="updateValidationErrors.due_date">
+              {{ updateValidationErrors.due_date[0] }}
+            </p>
+
           </div>
-          <input
-              v-model="editForm.title"
-              type="text"
-          >
-          <p v-if="updateValidationErrors.title">
-            {{ updateValidationErrors.title[0] }}
-          </p>
 
-          <textarea
-              v-model="editForm.description"
-          />
-          <p v-if="updateValidationErrors.description">
-            {{ updateValidationErrors.description[0] }}
-          </p>
+          <div class="list-item-actions">
+            <button
+                type="button"
+                :disabled="updating"
+                @click="updateTask"
+            >
+              {{ updating ? 'Saving...' : 'Save' }}
+            </button>
 
-          <select v-model="editForm.status">
-            <option value="pending">Pending</option>
-            <option value="in_progress">In progress</option>
-            <option value="completed">Completed</option>
-          </select>
-          <p v-if="updateValidationErrors.status">
-            {{ updateValidationErrors.status[0] }}
-          </p>
+            <button
+                type="button"
+                :disabled="updating"
+                @click="cancelEditing"
+            >
+              Cancel
+            </button>
+          </div>
 
-          <select v-model="editForm.priority">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-          <p v-if="updateValidationErrors.priority">
-            {{ updateValidationErrors.priority[0] }}
-          </p>
-
-          <input
-              v-model="editForm.due_date"
-              type="date"
-          >
-          <p v-if="updateValidationErrors.due_date">
-            {{ updateValidationErrors.due_date[0] }}
-          </p>
-
-          <button
-              type="button"
-              :disabled="updating"
-              @click="updateTask"
-          >
-            {{ updating ? 'Saving...' : 'Save' }}
-          </button>
-
-          <button
-              type="button"
-              :disabled="updating"
-              @click="cancelEditing"
-          >
-            Cancel
-          </button>
 
           <p v-if="updateError">
             {{ updateError }}
@@ -224,67 +220,81 @@
         </template>
 
         <template v-else>
-          <strong>{{ task.title }}</strong>
-          — {{ task.status }}
-          — {{ task.priority }}
-          <span v-if="task.project">
-            — {{ task.project.name }}
-          </span>
-
-          <button
-              type="button"
-              @click="startEditing(task)"
-          >
-            Edit
-          </button>
-
-          <button
-              type="button"
-              @click="deleteTask(task.id)"
-          >
-            Delete
-          </button>
-          <div>
-            <button
-                type="button"
-                @click="loadComments(task.id)"
-            >
-              Load comments
-            </button>
-
-            <p v-if="commentLoading[task.id]">
-              Loading comments...
+          <div class="list-item-content">
+            <div>
+              <strong>{{ task.title }}</strong>
+              — {{ task.status }}
+              — {{ task.priority }}
+              <span v-if="task.project">
+                — {{ task.project.name }}
+              </span>
+            </div>
+            <p v-if="task.description">
+              {{ task.description }}
             </p>
 
-            <div v-if="comments[task.id]">
-              <div
-                  v-for="comment in comments[task.id]"
-                  :key="comment.id"
+            <div>
+              <button
+                  type="button"
+                  @click="loadComments(task.id)"
               >
-                <strong>{{ comment.user.name }}</strong>
-                <span> — {{ comment.body }}</span>
-              </div>
+                Load comments
+              </button>
 
-              <form @submit.prevent="createComment(task.id)">
-      <textarea
-          v-model="commentBodies[task.id]"
-          placeholder="Write a comment..."
-          required
-      />
-
-                <button
-                    type="submit"
-                    :disabled="commentCreating[task.id]"
-                >
-                  {{ commentCreating[task.id] ? 'Adding...' : 'Add comment' }}
-                </button>
-              </form>
-
-              <p v-if="commentErrors[task.id]">
-                {{ commentErrors[task.id] }}
+              <p v-if="commentLoading[task.id]">
+                Loading comments...
               </p>
+
+              <div v-if="comments[task.id]">
+                <div
+                    v-for="comment in comments[task.id]"
+                    :key="comment.id"
+                >
+                  <strong>{{ comment.user.name }}</strong>
+                  <span> — {{ comment.body }}</span>
+                </div>
+
+                <form @submit.prevent="createComment(task.id)">
+                <textarea
+                    v-model="commentBodies[task.id]"
+                    placeholder="Write a comment..."
+                    required
+                />
+
+                  <button
+                      type="submit"
+                      :disabled="commentCreating[task.id]"
+                  >
+                    {{ commentCreating[task.id] ? 'Adding...' : 'Add comment' }}
+                  </button>
+                </form>
+
+                <p v-if="commentErrors[task.id]">
+                  {{ commentErrors[task.id] }}
+                </p>
+              </div>
             </div>
+
           </div>
+
+
+          <div class="list-item-actions">
+            <button
+                type="button"
+                @click="startEditing(task)"
+            >
+              Edit
+            </button>
+
+            <button
+                type="button"
+                @click="deleteTask(task.id)"
+            >
+              Delete
+            </button>
+          </div>
+
+
         </template>
       </li>
     </ul>
@@ -325,7 +335,7 @@ import type {
   ProjectsResponse,
 } from '~/types/project'
 
-const { getToken, logout } = useAuth()
+const { getToken } = useAuth()
 
 const comments = ref<Record<number, Comment[]>>({})
 const commentBodies = ref<Record<number, string>>({})
@@ -591,11 +601,6 @@ async function deleteTask(taskId: number) {
   } catch {
     error.value = 'Failed to delete task.'
   }
-}
-
-async function handleLogout() {
-  await logout()
-  await navigateTo('/login')
 }
 
 async function previousPage() {

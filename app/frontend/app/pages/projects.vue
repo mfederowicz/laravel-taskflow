@@ -1,16 +1,7 @@
 <template>
+  <AppNav />
   <main>
-    <nav>
-      <strong>TaskFlow</strong>
 
-      <NuxtLink to="/tasks">
-        Tasks
-      </NuxtLink>
-
-      <button type="button" @click="handleLogout">
-        Logout
-      </button>
-    </nav>
 
     <h1>My Projects</h1>
 
@@ -63,64 +54,74 @@
     <ul v-else>
       <li v-for="project in projects" :key="project.id">
         <template v-if="editingProjectId === project.id">
-          <input
-              v-model="editForm.name"
-              type="text"
-          >
+          <div class="list-item-content">
+            <input
+                v-model="editForm.name"
+                type="text"
+            >
 
-          <p v-if="updateValidationErrors.name">
-            {{ updateValidationErrors.name[0] }}
-          </p>
+            <p v-if="updateValidationErrors.name">
+              {{ updateValidationErrors.name[0] }}
+            </p>
 
-          <textarea
-              v-model="editForm.description"
-          />
+            <textarea
+                v-model="editForm.description"
+            />
 
-          <p v-if="updateValidationErrors.description">
-            {{ updateValidationErrors.description[0] }}
-          </p>
+            <p v-if="updateValidationErrors.description">
+              {{ updateValidationErrors.description[0] }}
+            </p>
+          </div>
+          <div class="list-item-actions">
+            <button
+                type="button"
+                :disabled="updating"
+                @click="updateProject"
+            >
+              {{ updating ? 'Saving...' : 'Save' }}
+            </button>
 
-          <button
-              type="button"
-              :disabled="updating"
-              @click="updateProject"
-          >
-            {{ updating ? 'Saving...' : 'Save' }}
-          </button>
+            <button
+                type="button"
+                :disabled="updating"
+                @click="cancelEditing"
+            >
+              Cancel
+            </button>
 
-          <button
-              type="button"
-              :disabled="updating"
-              @click="cancelEditing"
-          >
-            Cancel
-          </button>
+            <p v-if="updateError">
+              {{ updateError }}
+            </p>
+          </div>
 
-          <p v-if="updateError">
-            {{ updateError }}
-          </p>
         </template>
 
         <template v-else>
-          <strong>{{ project.name }}</strong>
+          <div class="list-item-content">
+            <strong>{{ project.name }}</strong>
 
-          <span v-if="project.description">
-      — {{ project.description }}
-    </span>
+            <span v-if="project.description">
+            — {{ project.description }}
+          </span>
+          </div>
 
-          <button
-              type="button"
-              @click="startEditing(project)"
-          >
-            Edit
-          </button>
 
-          <button
-              type="button"
-              @click="deleteProject(project.id)"
-          >
-            Delete
-          </button>
+          <div class="list-item-actions">
+            <button
+                type="button"
+                @click="startEditing(project)"
+            >
+              Edit
+            </button>
+
+            <button
+                type="button"
+                @click="deleteProject(project.id)"
+            >
+              Delete
+            </button>
+          </div>
+
         </template>
       </li>
     </ul>
@@ -134,7 +135,7 @@ import type {
   ProjectsResponse,
 } from '~/types/project'
 
-const { getToken, logout } = useAuth()
+const { getToken } = useAuth()
 
 const projects = ref<Project[]>([])
 const pending = ref(true)
@@ -233,11 +234,6 @@ async function createProject() {
   } finally {
     creating.value = false
   }
-}
-
-async function handleLogout() {
-  await logout()
-  await navigateTo('/login')
 }
 
 function startEditing(project: Project) {

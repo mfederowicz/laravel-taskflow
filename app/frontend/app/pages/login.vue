@@ -1,38 +1,41 @@
 <template>
-  <main>
-    <h1>Login</h1>
+  <main class="auth-page">
+    <section class="auth-card">
+      <h1>Login</h1>
 
-    <form @submit.prevent="login">
-      <div>
-        <label for="email">Email</label>
-        <input
-            id="email"
-            v-model="email"
-            type="email"
-            required
-        >
-      </div>
+      <form @submit.prevent="login">
+        <div>
+          <label for="email">Email</label>
+          <input
+              id="email"
+              v-model="email"
+              type="email"
+              required
+          >
+        </div>
 
-      <div>
-        <label for="password">Password</label>
-        <input
-            id="password"
-            v-model="password"
-            type="password"
-            required
-        >
-      </div>
+        <div>
+          <label for="password">Password</label>
+          <input
+              id="password"
+              v-model="password"
+              type="password"
+              required
+          >
+        </div>
 
-      <button type="submit" :disabled="pending">
-        {{ pending ? 'Logging in...' : 'Login' }}
-      </button>
-    </form>
+        <button type="submit" :disabled="pending">
+          {{ pending ? 'Logging in...' : 'Login' }}
+        </button>
+      </form>
 
-    <p v-if="error">
-      {{ error }}
-    </p>
+      <p v-if="error">
+        {{ error }}
+      </p>
+    </section>
   </main>
 </template>
+
 
 <script setup lang="ts">
 const email = ref('')
