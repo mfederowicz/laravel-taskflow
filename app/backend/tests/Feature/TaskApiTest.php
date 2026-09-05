@@ -188,4 +188,33 @@ class TaskApiTest extends TestCase
                 'message' => 'Unauthenticated.',
             ]);
     }
+
+    public function test_user_can_create_task_in_their_project(): void
+    {
+        $user = User::factory()->create();
+
+        $project = Project::factory()
+            ->for($user)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $response = $this->postJson('/api/tasks', [
+            'project_id' => $project->id,
+            'title' => 'Project task',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('data.project.id', $project->id)
+            ->assertJsonPath('data.project.name', $project->name);
+
+        $this->assertDatabaseHas('tasks', [
+            'user_id' => $user->id,
+            'project_id' => $project->id,
+            'title' => 'Project task',
+        ]);
+    }
 }
