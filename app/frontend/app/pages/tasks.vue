@@ -244,6 +244,47 @@
           >
             Delete
           </button>
+          <div>
+            <button
+                type="button"
+                @click="loadComments(task.id)"
+            >
+              Load comments
+            </button>
+
+            <p v-if="commentLoading[task.id]">
+              Loading comments...
+            </p>
+
+            <div v-if="comments[task.id]">
+              <div
+                  v-for="comment in comments[task.id]"
+                  :key="comment.id"
+              >
+                <strong>{{ comment.user.name }}</strong>
+                <span> — {{ comment.body }}</span>
+              </div>
+
+              <form @submit.prevent="createComment(task.id)">
+      <textarea
+          v-model="commentBodies[task.id]"
+          placeholder="Write a comment..."
+          required
+      />
+
+                <button
+                    type="submit"
+                    :disabled="commentCreating[task.id]"
+                >
+                  {{ commentCreating[task.id] ? 'Adding...' : 'Add comment' }}
+                </button>
+              </form>
+
+              <p v-if="commentErrors[task.id]">
+                {{ commentErrors[task.id] }}
+              </p>
+            </div>
+          </div>
         </template>
       </li>
     </ul>
@@ -276,6 +317,8 @@ import type {
   Task,
   TaskResponse,
   TasksResponse,
+  Comment,
+  CommentsResponse,
 } from '~/types/task'
 import type {
   Project,
@@ -283,6 +326,12 @@ import type {
 } from '~/types/project'
 
 const { getToken, logout } = useAuth()
+
+const comments = ref<Record<number, Comment[]>>({})
+const commentBodies = ref<Record<number, string>>({})
+const commentLoading = ref<Record<number, boolean>>({})
+const commentCreating = ref<Record<number, boolean>>({})
+const commentErrors = ref<Record<number, string>>({})
 
 const projects = ref<Project[]>([])
 const projectsLoading = ref(true)
@@ -582,5 +631,80 @@ function startEditing(task: Task) {
 function cancelEditing() {
   editingTaskId.value = null
   updateError.value = ''
+}
+
+async function loadComments(taskId: number) {
+  const token = getToken()
+
+  if (!token) {
+    await navigateTo('/login')
+    return
+  }
+
+  commentLoading.value[taskId] = true
+  commentErrors.value[taskId] = ''
+
+  try {
+    const response = await $fetch<CommentsResponse>(
+        `/api/tasks/${taskId}/comments`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+    )
+
+    comments.value[taskId] = response.data
+  } catch {
+    commentErrors.value[taskId] = 'Failed to load comments.'
+  } finally {
+    commentLoading.value[taskId] = false
+  }
+}
+async function createComment(taskId: number) {
+  const token = getToken()
+
+  if (!token) {
+    await navigateTo('/login')
+    return
+  }
+
+  const body = commentBodies.value[taskId]?.trim()
+
+  if (!body) {
+    return
+  }
+
+  commentCreating.value[taskId] = true
+  commentErrors.value[taskId] = ''
+
+  try {
+    const response = await $fetch<{ data: Comment }>(
+        `/api/tasks/${taskId}/comments`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+          body: {
+            body,
+          },
+        }
+    )
+
+    if (!comments.value[taskId]) {
+      comments.value[taskId] = []
+    }
+
+    comments.value[taskId].unshift(response.data)
+    commentBodies.value[taskId] = ''
+  } catch (err: any) {
+    commentErrors.value[taskId] =
+        err?.data?.message ?? 'Failed to create comment.'
+  } finally {
+    commentCreating.value[taskId] = false
+  }
 }
 </script>
