@@ -136,6 +136,31 @@
     <ul v-else>
       <li v-for="task in tasks" :key="task.id">
         <template v-if="editingTaskId === task.id">
+          <div>
+            <label for="edit-project">Project</label>
+
+            <select
+                id="edit-project"
+                v-model="editForm.project_id"
+                required
+            >
+              <option value="" disabled>
+                Select a project
+              </option>
+
+              <option
+                  v-for="project in projects"
+                  :key="project.id"
+                  :value="String(project.id)"
+              >
+                {{ project.name }}
+              </option>
+            </select>
+
+            <p v-if="updateValidationErrors.project_id">
+              {{ updateValidationErrors.project_id[0] }}
+            </p>
+          </div>
           <input
               v-model="editForm.title"
               type="text"
@@ -202,6 +227,9 @@
           <strong>{{ task.title }}</strong>
           — {{ task.status }}
           — {{ task.priority }}
+          <span v-if="task.project">
+            — {{ task.project.name }}
+          </span>
 
           <button
               type="button"
@@ -288,6 +316,7 @@ const filters = reactive({
 const editingTaskId = ref<number | null>(null)
 
 const editForm = reactive({
+  project_id: '',
   title: '',
   description: '',
   status: 'pending',
@@ -459,6 +488,7 @@ async function updateTask() {
             Accept: 'application/json',
           },
           body: {
+            project_id: Number(editForm.project_id),
             title: editForm.title,
             description: editForm.description || null,
             status: editForm.status,
@@ -539,6 +569,7 @@ async function nextPage() {
 function startEditing(task: Task) {
   editingTaskId.value = task.id
 
+  editForm.project_id = task.project ? String(task.project.id) : ''
   editForm.title = task.title
   editForm.description = task.description ?? ''
   editForm.status = task.status
