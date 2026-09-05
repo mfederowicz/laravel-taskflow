@@ -217,4 +217,33 @@ class TaskApiTest extends TestCase
             'title' => 'Project task',
         ]);
     }
+
+    public function test_user_cannot_move_task_to_another_users_project(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $taskProject = Project::factory()
+            ->for($otherUser)
+            ->create();
+
+        $userProject = Project::factory()
+            ->for($owner)
+            ->create();
+
+        $task = Task::factory()
+            ->for($owner)
+            ->for($userProject)
+            ->create();
+
+        Sanctum::actingAs($owner);
+
+        $this->putJson("/api/tasks/{$task->id}", [
+            'project_id' => $taskProject->id,
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'project_id',
+            ]);
+    }
 }

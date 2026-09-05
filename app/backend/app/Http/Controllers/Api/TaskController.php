@@ -54,15 +54,15 @@ class TaskController extends Controller
         ], 201);
     }
 
-    public function update(UpdateTaskRequest $request, Task $task): JsonResponse
+    public function update(UpdateTaskRequest $request, Task $task): TaskResource
     {
         $this->authorize('update', $task);
 
         $task->update($request->validated());
 
-        return response()->json([
-            'data' => new TaskResource($task->load(['user', 'project'])),
-        ]);
+        return new TaskResource(
+            $task->load(['user', 'project'])
+        );
     }
 
     public function destroy(Task $task): JsonResponse
