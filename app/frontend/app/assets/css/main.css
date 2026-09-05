@@ -164,6 +164,10 @@ li button {
     min-width: 0;
 }
 
+.list-item-content > button {
+    margin-top: 8px;
+}
+
 .list-item-actions {
     display: flex;
     flex-direction: column;
