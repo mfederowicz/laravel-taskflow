@@ -14,6 +14,36 @@
 
     <form @submit.prevent="createTask">
       <div>
+        <label for="project">Project</label>
+
+        <select
+            id="project"
+            v-model="form.project_id"
+            :disabled="projectsLoading"
+            required
+        >
+          <option value="" disabled>
+            {{ projectsLoading ? 'Loading projects...' : 'Select a project' }}
+          </option>
+
+          <option
+              v-for="project in projects"
+              :key="project.id"
+              :value="String(project.id)"
+          >
+            {{ project.name }}
+          </option>
+        </select>
+
+        <p v-if="validationErrors.project_id">
+          {{ validationErrors.project_id[0] }}
+        </p>
+
+        <p v-if="projectsError">
+          {{ projectsError }}
+        </p>
+      </div>
+      <div>
         <label for="title">Title</label>
         <input
             id="title"
@@ -219,8 +249,16 @@ import type {
   TaskResponse,
   TasksResponse,
 } from '~/types/task'
+import type {
+  Project,
+  ProjectsResponse,
+} from '~/types/project'
 
 const { getToken, logout } = useAuth()
+
+const projects = ref<Project[]>([])
+const projectsLoading = ref(true)
+const projectsError = ref('')
 
 const tasks = ref<Task[]>([])
 const pending = ref(true)
@@ -234,6 +272,7 @@ const currentPage = ref(1)
 const lastPage = ref(1)
 
 const form = reactive({
+  project_id: '',
   title: '',
   description: '',
   status: 'pending',
@@ -268,8 +307,31 @@ onMounted(async () => {
     return
   }
 
-  await loadTasksWithFilters()
+  await Promise.all([
+    loadTasksWithFilters(),
+    loadProjects(token),
+  ])
 })
+
+async function loadProjects(token: string) {
+  try {
+    const response = await $fetch<ProjectsResponse>(
+        '/api/projects',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        }
+    )
+
+    projects.value = response.data
+  } catch {
+    projectsError.value = 'Failed to load projects.'
+  } finally {
+    projectsLoading.value = false
+  }
+}
 
 async function loadTasksWithFilters() {
   const token = getToken()
@@ -342,6 +404,7 @@ async function createTask() {
         Accept: 'application/json',
       },
       body: {
+        project_id: Number(form.project_id),
         title: form.title,
         description: form.description || null,
         status: form.status,
@@ -352,6 +415,7 @@ async function createTask() {
 
     tasks.value.unshift(response.data)
 
+    form.project_id = ''
     form.title = ''
     form.description = ''
     form.status = 'pending'

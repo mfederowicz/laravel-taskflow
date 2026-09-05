@@ -5,6 +5,10 @@ export interface Task {
     status: string
     priority: string
     due_date: string | null
+    project: {
+        id: number
+        name: string
+    }
 }
 
 export interface TasksResponse {

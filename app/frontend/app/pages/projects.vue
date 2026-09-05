@@ -128,19 +128,11 @@
 </template>
 
 <script setup lang="ts">
-interface Project {
-  id: number
-  name: string
-  description: string | null
-}
-
-interface ProjectsResponse {
-  data: Project[]
-}
-
-interface ProjectResponse {
-  data: Project
-}
+import type {
+  Project,
+  ProjectResponse,
+  ProjectsResponse,
+} from '~/types/project'
 
 const { getToken, logout } = useAuth()
 
