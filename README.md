@@ -818,19 +818,19 @@ SQLite supports transactions, so the development database does not prevent using
 Start the application:
 
 ```bash
-docker compose --env-file .env -f docker/docker-compose.yml up -d
+./bin/run.sh
 ```
 
 Rebuild:
 
 ```bash
-docker compose --env-file .env -f docker/docker-compose.yml up -d --build
+./bin/run.sh build
 ```
 
 Stop:
 
 ```bash
-docker compose -f docker/docker-compose.yml down
+./bin/run.sh stop
 ```
 
 Laravel version:
