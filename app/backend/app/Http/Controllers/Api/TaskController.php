@@ -17,7 +17,7 @@ class TaskController extends Controller
     {
         $tasks = $request->user()
             ->tasks()
-            ->with('user')
+            ->with(['user', 'project'])
             ->when(
                 $request->status,
                 fn ($query, $status) => $query->where('status', $status)
