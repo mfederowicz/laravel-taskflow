@@ -181,6 +181,12 @@ hr {
     border-top: 1px solid #e5e7eb;
 }
 
+.auth-intro {
+    margin: -8px 0 24px;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
 .auth-page {
     min-height: 100vh;
     display: flex;
@@ -198,4 +204,94 @@ hr {
 
 .auth-page h1 {
     margin-top: 0;
+}
+
+.login-help {
+    margin-bottom: 24px;
+}
+
+.login-help summary {
+    cursor: pointer;
+    color: #374151;
+    font-weight: 600;
+}
+
+.login-help[open] summary {
+    margin-bottom: 16px;
+}
+
+.login-help .demo-info,
+.login-help .developer-info {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+}
+
+.login-help .demo-info:last-child,
+.login-help .developer-info:last-child {
+    margin-bottom: 0;
+}
+
+.login-help pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre;
+    padding: 12px;
+    background: #f3f4f6;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.login-help code {
+    overflow-wrap: normal;
+}
+
+.login-help {
+    min-width: 0;
+}
+
+.login-help .developer-info {
+    min-width: 0;
+}
+
+.home-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.home-card {
+    width: min(100% - 32px, 600px);
+    padding: 40px;
+    text-align: center;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+}
+
+.home-card h1 {
+    margin-top: 0;
+}
+
+.home-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.home-actions a {
+    display: inline-block;
+    padding: 9px 14px;
+    border-radius: 6px;
+    background: #2563eb;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.home-actions a:hover {
+    background: #1d4ed8;
 }

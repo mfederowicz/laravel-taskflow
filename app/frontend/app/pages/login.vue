@@ -1,7 +1,14 @@
 <template>
   <main class="auth-page">
     <section class="auth-card">
-      <h1>Login</h1>
+      <h1>TaskFlow</h1>
+
+      <p class="auth-intro">
+        A simple project management application for organizing projects,
+        tasks, and comments.
+      </p>
+
+      <h2>Sign in</h2>
 
       <form @submit.prevent="login">
         <div>
@@ -32,12 +39,47 @@
       <p v-if="error">
         {{ error }}
       </p>
+      <details class="login-help">
+        <summary>Demo account & developer information</summary>
+
+        <div class="demo-info">
+          <strong>Demo account</strong>
+
+          <p>
+            Email: <code>demo@example.com</code><br>
+            Password: <code>password123</code>
+          </p>
+        </div>
+
+        <div class="developer-info">
+          <strong>Create another user</strong>
+
+          <p>
+            New users can be created from the Laravel application using Artisan:
+          </p>
+
+          <pre><code>./bin/artisan tinker</code></pre>
+
+          <p>Then:</p>
+
+          <pre><code>App\Models\User::create([
+    'name' => 'John Doe',
+    'email' => 'john@example.com',
+    'password' => Illuminate\Support\Facades\Hash::make('password123'),
+]);</code></pre>
+        </div>
+      </details>
+
     </section>
+
   </main>
 </template>
 
 
 <script setup lang="ts">
+useHead({
+  title: 'Sign in',
+})
 const email = ref('')
 const password = ref('')
 const pending = ref(false)

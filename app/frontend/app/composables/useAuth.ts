@@ -1,15 +1,17 @@
-export function useAuth() {
+function useAuth() {
     const token = useState<string | null>('auth-token', () => null)
 
     function setToken(value: string) {
         token.value = value
 
+        // @ts-ignore
         if (import.meta.client) {
             localStorage.setItem('token', value)
         }
     }
 
     function getToken(): string | null {
+        // @ts-ignore
         if (!import.meta.client) {
             return null
         }
@@ -42,6 +44,7 @@ export function useAuth() {
 
         token.value = null
 
+        // @ts-ignore
         if (import.meta.client) {
             localStorage.removeItem('token')
         }
@@ -54,3 +57,5 @@ export function useAuth() {
         logout,
     }
 }
+
+export default useAuth

@@ -129,6 +129,9 @@
 </template>
 
 <script setup lang="ts">
+useHead({
+  title: 'Projects',
+})
 import type {
   Project,
   ProjectResponse,
