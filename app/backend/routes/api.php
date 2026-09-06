@@ -25,6 +25,11 @@ Route::middleware('auth:jwt')->get('/jwt-test', function (Request $request) {
     ]);
 });
 
+Route::middleware('auth.multi')->group(function () {
+    Route::get('/tasks', [TaskController::class, 'index']);
+});
+
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
@@ -32,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    Route::get('/tasks', [TaskController::class, 'index']);
+    //Route::get('/tasks', [TaskController::class, 'index']);
     Route::post('/tasks', [TaskController::class, 'store']);
     Route::get('/tasks/{task}', [TaskController::class, 'show']);
     Route::put('/tasks/{task}', [TaskController::class, 'update']);
