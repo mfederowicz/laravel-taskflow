@@ -145,7 +145,9 @@ class CommentApiTest extends TestCase
 
     public function test_unauthenticated_user_cannot_access_comments(): void
     {
-        $this->getJson('/api/tasks/1/comments')
+        $task = Task::factory()->create();
+
+        $this->getJson("/api/tasks/{$task->id}/comments")
             ->assertUnauthorized()
             ->assertJson([
                 'success' => false,
