@@ -25,6 +25,13 @@ Route::middleware('auth:jwt')->get('/jwt-test', function (Request $request) {
     ]);
 });
 
+Route::middleware('auth:passport')->get('/passport-test', function (Request $request) {
+    return response()->json([
+        'success' => true,
+        'user' => $request->user(),
+    ]);
+});
+
 Route::middleware('auth.multi')->group(function () {
     Route::get('/tasks', [TaskController::class, 'index']);
 });
