@@ -13,7 +13,7 @@ class MultiAuth
     {
         $method = $request->header('X-Auth-Method', 'sanctum');
 
-        if (! in_array($method, ['sanctum', 'jwt'], true)) {
+        if (! in_array($method, ['sanctum', 'jwt', 'passport'], true)) {
             Log::warning('Invalid authentication method', [
                 'auth_method' => $method,
                 'ip' => $request->ip(),
