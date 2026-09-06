@@ -6,8 +6,10 @@ The project focuses on clean, understandable fundamentals such as authentication
 
 ## Features
 
-* User registration and login
+* Multi-method API authentication
 * Laravel Sanctum API authentication
+* JWT API authentication
+* Laravel Passport OAuth2 authentication
 * Token-based API authentication
 * Logout and authentication state handling
 * User-owned Projects
@@ -37,6 +39,8 @@ The project focuses on clean, understandable fundamentals such as authentication
 * PHP 8.5
 * Laravel 13
 * Laravel Sanctum
+* `tymon/jwt-auth`
+* Laravel Passport
 * Eloquent ORM
 * SQLite for local development and automated tests
 * MySQL-compatible configuration for environments using MySQL
@@ -157,11 +161,31 @@ Generate the Laravel application key:
 ./bin/artisan key:generate
 ```
 
+Generate JWT_SECRET (only once if JWT_SECRET is empty):
+
+```bash
+./bin/artisan jwt:secret
+```
+
+Generate passport keys (only once if they don't exist in app/backend/storage):
+
+```bash
+./bin/artisan passport:keys
+```
+
+Fix ownership of database dir:
+
+```bash
+sudo chown www-data:www-data app/backend/database/ -R
+```
+
 Run migrations:
 
 ```bash
-./bin/artisan migrate
+./bin/artisan migrate --seed
 ```
+
+
 
 The application is then available through the configured host.
 
@@ -223,7 +247,18 @@ APP_DEBUG=true
 APP_URL=http://localhost:8080
 APP_PORT=8080
 DB_CONNECTION=sqlite
+JWT_SECRET=
 ```
+
+JWT authentication requires `JWT_SECRET`.
+
+If the local `.env` does not already contain a JWT secret, generate one with:
+
+```bash
+./bin/artisan jwt:secret
+```
+
+
 
 The local `.env` file is not committed to Git.
 
@@ -311,7 +346,74 @@ Generated files are handled on the host so that newly created project files are 
 
 ## Authentication
 
-Authentication is implemented with Laravel Sanctum.
+TaskFlow demonstrates three authentication mechanisms:
+
+- **Sanctum** — Laravel personal access tokens
+- **JWT** — `tymon/jwt-auth`
+- **Passport** — OAuth2 authorization server
+
+Protected API routes use the `auth.multi` middleware. The authentication
+method is selected with the `X-Auth-Method` request header.
+
+Supported values:
+
+- `sanctum`
+- `jwt`
+- `passport`
+
+If `X-Auth-Method` is omitted, Sanctum is used by default.
+
+Example:
+
+```http
+GET /api/tasks
+Authorization: Bearer <token>
+X-Auth-Method: jwt
+```
+
+### Passport setup
+
+Passport uses OAuth2 keys stored in the backend storage directory:
+
+```text
+app/backend/storage/oauth-private.key
+app/backend/storage/oauth-public.key
+```
+
+These keys are environment-specific and should not be committed to the repository.
+
+Passport OAuth clients are stored in the application's `oauth_clients` table.
+
+For manual API testing with the password grant, create a password-grant OAuth client using the Passport Artisan command and keep its client ID and secret available for your requests.
+
+The OAuth token endpoint is:
+
+```text
+POST /api/oauth/token
+```
+
+The endpoint accepts OAuth2 parameters such as:
+
+```json
+{
+  "grant_type": "password",
+  "client_id": "<client-id>",
+  "client_secret": "<client-secret>",
+  "username": "john@example.com",
+  "password": "password123",
+  "scope": ""
+}
+```
+
+The returned `access_token` can then be used with:
+
+```http
+Authorization: Bearer <access-token>
+X-Auth-Method: passport
+```
+
+The project tests do not depend on a manually created OAuth client. Passport clients required by tests are created inside the test database.
+
 
 ### Register
 
@@ -373,7 +475,7 @@ The current Sanctum access token is deleted.
 
 ## API
 
-All protected API routes require a valid Sanctum bearer token.
+All protected API routes require a valid bearer token authenticated through the selected authentication method.
 
 ### Tasks
 
@@ -662,6 +764,8 @@ No external component library is required.
 
 ## Testing
 
+## Testing
+
 Laravel feature tests cover the main API behavior.
 
 Run the complete test suite with:
@@ -682,6 +786,10 @@ Run a specific test class:
 
 ```bash
 ./bin/artisan test --filter=CommentApiTest
+```
+
+```bash
+./bin/artisan test --filter=MultiAuthTest
 ```
 
 Current test coverage includes:
@@ -717,7 +825,20 @@ Current test coverage includes:
 * validation
 * unauthenticated access
 
+### Multi-authentication
+
+`MultiAuthTest` verifies authentication through all three supported mechanisms:
+
+* Sanctum authentication with an explicit `X-Auth-Method: sanctum` header
+* JWT authentication with an explicit `X-Auth-Method: jwt` header
+* Passport authentication with an explicit `X-Auth-Method: passport` header
+* Sanctum as the default when `X-Auth-Method` is not provided
+* `401 Unauthorized` for an invalid `X-Auth-Method`
+
+The Passport test creates its OAuth client and obtains an access token through the OAuth2 password grant, keeping the test independent of manually configured OAuth clients.
+
 Tests use Laravel's `RefreshDatabase` and Sanctum's `actingAs()` helpers.
+
 
 ## Project Structure
 
