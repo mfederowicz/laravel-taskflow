@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
@@ -65,5 +66,27 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(null, 204);
+    }
+
+
+    public function loginJwt(Request $request)
+    {
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! $token = JWTAuth::attempt($credentials)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+            ], 401);
+        }
+
+        return response()->json([
+            'success' => true,
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ]);
     }
 }

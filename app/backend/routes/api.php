@@ -16,6 +16,14 @@ Route::get('/health', function () {
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login/jwt', [AuthController::class, 'loginJwt']);
+
+Route::middleware('auth:jwt')->get('/jwt-test', function (Request $request) {
+    return response()->json([
+        'success' => true,
+        'user' => $request->user(),
+    ]);
+});
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
