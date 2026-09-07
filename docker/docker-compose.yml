@@ -2,10 +2,13 @@ name: taskflow
 services:
   backend:
     build:
+      args:
+        U_ID: ${UID:-1000}
       context: ..
       dockerfile: docker/image-backend/Dockerfile
     container_name: taskflow-backend
     working_dir: /var/www/html
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ../app/backend:/var/www/html
       - ../.env:/var/www/html/.env
