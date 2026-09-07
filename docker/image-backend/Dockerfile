@@ -25,7 +25,6 @@ RUN \
   && chown -R default:www-data /var/www/html
 USER default
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 9000
 
 CMD ["php-fpm"]
