@@ -17,13 +17,15 @@ RUN apt-get update && apt-get install -y \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-ARG U_ID=1000
+ARG UID=1000
+ARG GID=33
 RUN \
   addgroup default \
-  && adduser --shell /bin/bash --uid ${U_ID} --ingroup default --home /home/default --disabled-password default \
-  && chown -R default:default /var/www/html
+  && adduser --shell /bin/bash --uid ${UID} --gid ${GID} --home /home/default --disabled-password default \
+  && chown -R default:www-data /var/www/html
 USER default
 
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 EXPOSE 9000
 
 CMD ["php-fpm"]

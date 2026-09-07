@@ -3,12 +3,13 @@ services:
   backend:
     build:
       args:
-        U_ID: ${UID:-1000}
+        UID: ${USER_UID:-1000}
+        GID: ${USER_GID:-33}
       context: ..
       dockerfile: docker/image-backend/Dockerfile
     container_name: taskflow-backend
     working_dir: /var/www/html
-    user: "${UID:-1000}:${GID:-1000}"
+    user: "${USER_UID:-1000}:${USER_GID:-33}"
     volumes:
       - ../app/backend:/var/www/html
       - ../.env:/var/www/html/.env
