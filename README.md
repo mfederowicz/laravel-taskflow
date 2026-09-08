@@ -949,40 +949,40 @@ Relevant repository structure:
 
 ```text
 .
-├── .env
-├── .env.example
-├── README.md
-├── app
-│   ├── backend
-│   │   ├── app
-│   │   │   ├── Http
-│   │   │   ├── Models
-│   │   │   └── Policies
-│   │   ├── database
-│   │   ├── routes
-│   │   └── tests
-│   │
-│   └── frontend
-│       ├── app
-│       │   ├── assets
-│       │   ├── components
-│       │   ├── composables
-│       │   ├── pages
-│       │   └── types
-│       └── nuxt.config.ts
+├── backend/                        # Laravel API
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/Api/
+│   │   │   ├── Middleware/
+│   │   │   ├── Requests/
+│   │   │   └── Resources/
+│   │   ├── Models/
+│   │   └── Policies/
+│   ├── config/
+│   ├── database/                   # migrations + database.sqlite
+│   ├── lang/                       # en, pl validation messages
+│   ├── routes/api.php
+│   └── tests/Feature/
 │
-├── bin
-│   └── artisan
+├── frontend/                       # Nuxt / Vue
+│   └── app/
+│       ├── assets/css/
+│       ├── components/
+│       ├── composables/
+│       ├── middleware/
+│       ├── pages/
+│       ├── plugins/
+│       └── types/
 │
-└── docker
+├── bin/
+│   ├── artisan                     # docker compose wrapper for artisan
+│   └── run.sh                      # docker compose wrapper
+│
+└── docker/
     ├── docker-compose.yml
-    ├── configs
-    │   └── nginx
-    │       └── default.conf
-    ├── image-backend
-    │   └── Dockerfile
-    └── image-frontend
-        └── Dockerfile
+    ├── configs/nginx/default.conf
+    ├── image-backend/Dockerfile
+    └── image-frontend/Dockerfile
 ```
 
 All Docker-related configuration is kept under the `docker/` directory.

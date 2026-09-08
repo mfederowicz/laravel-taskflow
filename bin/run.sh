@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export USER_UID=$(id -u)
-export USER_GID=$(id -g www-data)
+export USER_GID=$(id -g www-data 2>/dev/null || id -g)
 
 set -e
 
