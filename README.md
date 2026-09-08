@@ -449,6 +449,31 @@ Example request:
 
 The API returns a Sanctum bearer token.
 
+JWT login uses the dedicated endpoint:
+
+```text
+POST /api/login/jwt
+```
+
+Example request:
+
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+The API returns a JWT bearer token.
+
+For Passport login, the frontend first requests the password-grant OAuth client:
+
+```text
+GET /api/oauth/client
+```
+
+and then exchanges the credentials at `POST /api/oauth/token`.
+
 Authenticated requests use:
 
 ```text
@@ -469,9 +494,11 @@ Requires authentication.
 POST /api/logout
 ```
 
-Requires authentication.
+Requires authentication. The behavior depends on the authentication method sent via `X-Auth-Method`:
 
-The current Sanctum access token is deleted.
+- `sanctum` — deletes the current Sanctum access token
+- `jwt` — invalidates the current JWT
+- `passport` — revokes the current Passport access token
 
 ## API
 
@@ -697,7 +724,7 @@ app/frontend/app/assets/css/main.css
 
 ### Authentication state
 
-The frontend stores the Sanctum token in browser `localStorage`.
+The frontend stores the bearer token and the selected authentication method in browser `localStorage`.
 
 The authentication composable is:
 
@@ -707,10 +734,22 @@ app/frontend/app/composables/useAuth.ts
 
 It handles:
 
-* storing the token
-* retrieving the token
-* removing the token
+* storing the token and selected method
+* retrieving the token and selected method
+* removing the token and selected method
 * logout
+
+The login page (`app/frontend/app/pages/login.vue`) lets the user pick the authentication method (Sanctum, JWT, or Passport).
+
+API requests centralize their headers through:
+
+```text
+app/frontend/app/composables/useApi.ts
+```
+
+which sets `Accept`, `X-Auth-Method`, and the `Authorization` bearer header on every request.
+
+A client plugin (`app/frontend/app/plugins/auth-header.ts`) restores the stored authentication method so subsequent requests keep using the same method.
 
 Browser-only APIs are guarded so they are not accessed during Nuxt server-side rendering.
 
@@ -764,8 +803,6 @@ No external component library is required.
 
 ## Testing
 
-## Testing
-
 Laravel feature tests cover the main API behavior.
 
 Run the complete test suite with:
@@ -778,17 +815,8 @@ Run a specific test class:
 
 ```bash
 ./bin/artisan test --filter=TaskApiTest
-```
-
-```bash
 ./bin/artisan test --filter=ProjectApiTest
-```
-
-```bash
 ./bin/artisan test --filter=CommentApiTest
-```
-
-```bash
 ./bin/artisan test --filter=MultiAuthTest
 ```
 
@@ -834,6 +862,9 @@ Current test coverage includes:
 * Passport authentication with an explicit `X-Auth-Method: passport` header
 * Sanctum as the default when `X-Auth-Method` is not provided
 * `401 Unauthorized` for an invalid `X-Auth-Method`
+* logout deletes the current Sanctum token
+* logout invalidates the current JWT
+* logout revokes the current Passport token
 
 The Passport test creates its OAuth client and obtains an access token through the OAuth2 password grant, keeping the test independent of manually configured OAuth clients.
 
@@ -936,59 +967,15 @@ SQLite supports transactions, so the development database does not prevent using
 
 ## Development Commands
 
-Start the application:
+Control the Docker application with `bin/run.sh`:
 
 ```bash
-./bin/run.sh
+./bin/run.sh        # start
+./bin/run.sh build  # rebuild
+./bin/run.sh stop   # stop
 ```
 
-Rebuild:
-
-```bash
-./bin/run.sh build
-```
-
-Stop:
-
-```bash
-./bin/run.sh stop
-```
-
-Laravel version:
-
-```bash
-./bin/artisan --version
-```
-
-Migrations:
-
-```bash
-./bin/artisan migrate
-```
-
-Fresh database:
-
-```bash
-./bin/artisan migrate:fresh --seed
-```
-
-Routes:
-
-```bash
-./bin/artisan route:list
-```
-
-Tests:
-
-```bash
-./bin/artisan test
-```
-
-Laravel shell:
-
-```bash
-./bin/artisan tinker
-```
+The Artisan Helper section above documents migration, route, test, and shell commands.
 
 ## Future Improvements
 
