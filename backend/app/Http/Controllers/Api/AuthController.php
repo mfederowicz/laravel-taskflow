@@ -7,6 +7,7 @@ use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client;
@@ -80,7 +81,7 @@ class AuthController extends Controller
      * Revokes the active token according to the selected authentication method
      * (Sanctum: delete token, JWT: blacklist, Passport: revoke token).
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request): Response
     {
         $user = $request->user();
 
@@ -100,7 +101,7 @@ class AuthController extends Controller
                 break;
         }
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 
     /**
