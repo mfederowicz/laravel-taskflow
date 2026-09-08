@@ -12,6 +12,17 @@ class TaskPolicy
         return $user->id === $task->user_id;
     }
 
+    /**
+     * Determine whether the user can comment on the task.
+     *
+     * Only the task owner may add a comment — the same ownership rule used
+     * by the other TaskPolicy methods.
+     */
+    public function comment(User $user, Task $task): bool
+    {
+        return $user->id === $task->user_id;
+    }
+
     public function update(User $user, Task $task): bool
     {
         return $user->id === $task->user_id;

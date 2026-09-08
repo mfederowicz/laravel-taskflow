@@ -53,5 +53,8 @@ Route::prefix('v1')->group(function () {
         // Comments
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);
         Route::post('/tasks/{task}/comments', [CommentController::class, 'store']);
+        Route::get('/tasks/{task}/comments/{comment}', [CommentController::class, 'show'])->scopeBindings();
+        Route::put('/tasks/{task}/comments/{comment}', [CommentController::class, 'update'])->scopeBindings();
+        Route::delete('/tasks/{task}/comments/{comment}', [CommentController::class, 'destroy'])->scopeBindings();
     });
 });

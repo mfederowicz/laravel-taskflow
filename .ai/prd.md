@@ -66,8 +66,11 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 
 - `GET /api/v1/tasks/{task}/comments`
 - `POST /api/v1/tasks/{task}/comments`
+- `GET /api/v1/tasks/{task}/comments/{comment}`
+- `PUT /api/v1/tasks/{task}/comments/{comment}`
+- `DELETE /api/v1/tasks/{task}/comments/{comment}`
 - Fields: `body` (required); `task_id` and `user_id` set server-side.
-- Comments are nested under tasks; no update/delete endpoints in the current scope.
+- Comments are nested under tasks; only the comment author can update/delete (`CommentPolicy`).
 
 ### Frontend (client)
 
