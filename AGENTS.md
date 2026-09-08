@@ -9,7 +9,7 @@ Infrastructure lives at the repo root:
 
 - `docker/` — Docker Compose stack, images, nginx config
 - `bin/` — helper scripts (`run.sh`, `artisan`)
-- `.env` — shared environment (mounted into the backend container)
+- `.env` — shared environment (injected into the backend container via `env_file`)
 
 ## Repository layout
 
@@ -58,7 +58,7 @@ Everything runs through Docker Compose. Start the stack from the repo root:
 Services:
 
 - `nginx` — entry point on `${APP_PORT:-8080}`; proxies `/api/*` to the backend and everything else to the frontend
-- `backend` — PHP-FPM (Laravel), working dir `/var/www/html`; `.env` is mounted from the repo root
+- `backend` — PHP-FPM (Laravel), working dir `/var/www/html`; env vars are injected from the repo root `.env` via `env_file`
 - `frontend` — Nuxt dev server on port 3000, working dir `/app`; `node_modules` is a named volume
 
 Run artisan commands (executes inside the backend container):

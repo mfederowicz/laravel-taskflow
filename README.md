@@ -175,11 +175,7 @@ Generate passport keys (only once if they don't exist in backend/storage):
 ./bin/artisan passport:keys
 ```
 
-Fix ownership of database dir:
-
-```bash
-sudo chown www-data:www-data backend/database/ -R
-```
+Database directory ownership is handled automatically — `bin/run.sh` maps your host user/group into the containers, so the SQLite file created by `migrate` is owned by your user.
 
 Run migrations:
 
@@ -237,7 +233,7 @@ There is intentionally no database container in the current development environm
 
 ## Environment
 
-The root `.env` file is shared with the backend container.
+The root `.env` file is injected into the backend container as environment variables (via Compose `env_file`).
 
 Example development configuration:
 
