@@ -408,7 +408,7 @@ onMounted(async () => {
 async function loadProjects() {
   try {
     const response = await apiFetch<ProjectsResponse>(
-        '/api/projects',
+        '/api/v1/projects',
     )
 
     projects.value = response.data
@@ -446,7 +446,7 @@ async function loadTasksWithFilters() {
     const query = params.toString()
 
     const response = await apiFetch<TasksResponse>(
-        query ? `/api/tasks?${query}` : '/api/tasks',
+        query ? `/api/v1/tasks?${query}` : '/api/v1/tasks',
     )
 
     tasks.value = response.data
@@ -477,7 +477,7 @@ async function createTask() {
   validationErrors.value = {}
 
   try {
-    const response = await apiFetch<TaskResponse>('/api/tasks', {
+    const response = await apiFetch<TaskResponse>('/api/v1/tasks', {
       method: 'POST',
       body: {
         project_id: Number(form.project_id),
@@ -527,7 +527,7 @@ async function updateTask() {
 
   try {
     const response = await apiFetch<TaskResponse>(
-        `/api/tasks/${editingTaskId.value}`,
+        `/api/v1/tasks/${editingTaskId.value}`,
         {
           method: 'PUT',
           body: {
@@ -571,7 +571,7 @@ async function deleteTask(taskId: number) {
   }
 
   try {
-    await apiFetch(`/api/tasks/${taskId}`, {
+    await apiFetch(`/api/v1/tasks/${taskId}`, {
       method: 'DELETE',
     })
 
@@ -631,7 +631,7 @@ async function loadComments(taskId: number) {
 
   try {
     const response = await apiFetch<CommentsResponse>(
-        `/api/tasks/${taskId}/comments`,
+        `/api/v1/tasks/${taskId}/comments`,
     )
 
     comments.value[taskId] = response.data
@@ -660,7 +660,7 @@ async function createComment(taskId: number) {
 
   try {
     const response = await apiFetch<{ data: Comment }>(
-        `/api/tasks/${taskId}/comments`,
+        `/api/v1/tasks/${taskId}/comments`,
         {
           method: 'POST',
           body: {

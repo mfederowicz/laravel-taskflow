@@ -46,21 +46,21 @@ All routes are defined in `routes/api.php` and served under `/api/*` by nginx.
 
 | Method | Path                | Notes                                    |
 |--------|---------------------|------------------------------------------|
-| POST   | `/api/register`     | Create user, returns a Sanctum token     |
-| POST   | `/api/login`        | Sanctum login                            |
-| POST   | `/api/login/jwt`    | JWT login                                |
-| GET    | `/api/oauth/client` | Dev helper — creates a password-grant client |
-| POST   | `/api/oauth/token`  | Passport OAuth2 password grant           |
-| POST   | `/api/logout`       | Auth required; revokes the active token  |
-| GET    | `/api/user`         | Auth required; current user              |
+| POST   | `/api/v1/register`    | Create user, returns a Sanctum token     |
+| POST   | `/api/v1/login`       | Sanctum login                            |
+| POST   | `/api/v1/login/jwt`   | JWT login                                |
+| GET    | `/api/v1/oauth/client` | Dev helper — creates a password-grant client |
+| POST   | `/api/v1/oauth/token` | Passport OAuth2 password grant           |
+| POST   | `/api/v1/logout`      | Auth required; revokes the active token  |
+| GET    | `/api/v1/user`        | Auth required; current user              |
 
 Authenticated requests must send `X-Auth-Method: sanctum|jwt|passport` plus `Authorization: Bearer <token>`. See `.ai/auth-spec.md` for details.
 
 ### Resources (all auth-protected)
 
-- Tasks: `GET/POST /api/tasks`, `GET/PUT/DELETE /api/tasks/{task}`
-- Projects: `GET/POST /api/projects`, `GET/PUT/DELETE /api/projects/{project}`
-- Comments: `GET/POST /api/tasks/{task}/comments`
+- Tasks: `GET/POST /api/v1/tasks`, `GET/PUT/DELETE /api/v1/tasks/{task}`
+- Projects: `GET/POST /api/v1/projects`, `GET/PUT/DELETE /api/v1/projects/{project}`
+- Comments: `GET/POST /api/v1/tasks/{task}/comments`
 
 Authorization is enforced via `app/Policies` (`ProjectPolicy`, `TaskPolicy` — owners only). Validation lives in `app/Http/Requests`; responses use `app/Http/Resources`.
 

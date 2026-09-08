@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,8 +12,14 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
+#[Group('Authentication')]
 class AuthController extends Controller
 {
+    /**
+     * Create a new user account.
+     *
+     * Returns the created user plus a Sanctum personal access token.
+     */
     public function register(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -37,6 +44,11 @@ class AuthController extends Controller
         ], 201);
     }
 
+    /**
+     * Sign in with Sanctum.
+     *
+     * Issues a Sanctum personal access token for the authenticated user.
+     */
     public function login(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -62,6 +74,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Sign out the current user.
+     *
+     * Revokes the active token according to the selected authentication method
+     * (Sanctum: delete token, JWT: blacklist, Passport: revoke token).
+     */
     public function logout(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -85,7 +103,11 @@ class AuthController extends Controller
         return response()->json(null, 204);
     }
 
-
+    /**
+     * Sign in with JWT.
+     *
+     * Issues a signed JWT bearer token (tymon/jwt-auth).
+     */
     public function loginJwt(Request $request)
     {
         $credentials = $request->validate([
@@ -107,6 +129,12 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Create a Passport OAuth2 client.
+     *
+     * Dev convenience endpoint that creates (or returns) a password-grant
+     * client used with POST /oauth/token.
+     */
     public function getPassportClient(): JsonResponse
     {
         $client = Client::factory()->create([

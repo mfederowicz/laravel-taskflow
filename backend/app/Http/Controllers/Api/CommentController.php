@@ -6,11 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Resources\CommentResource;
 use App\Models\Task;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+#[Group('Comments')]
 class CommentController extends Controller
 {
+    /**
+     * List comments for a task.
+     */
     public function index(Request $request, Task $task): AnonymousResourceCollection
     {
         $this->authorize('view', $task);
@@ -23,6 +28,9 @@ class CommentController extends Controller
         return CommentResource::collection($comments);
     }
 
+    /**
+     * Add a comment to a task.
+     */
     public function store(
         StoreCommentRequest $request,
         Task $task

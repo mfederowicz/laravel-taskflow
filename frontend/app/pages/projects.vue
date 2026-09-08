@@ -179,7 +179,7 @@ onMounted(async () => {
 async function loadProjects() {
   try {
     const response = await apiFetch<ProjectsResponse>(
-        '/api/projects',
+        '/api/v1/projects',
     )
 
     projects.value = response.data
@@ -204,7 +204,7 @@ async function createProject() {
 
   try {
     const response = await apiFetch<ProjectResponse>(
-        '/api/projects',
+        '/api/v1/projects',
         {
           method: 'POST',
           body: {
@@ -264,7 +264,7 @@ async function updateProject() {
 
   try {
     const response = await apiFetch<ProjectResponse>(
-        `/api/projects/${editingProjectId.value}`,
+        `/api/v1/projects/${editingProjectId.value}`,
         {
           method: 'PUT',
           body: {
@@ -304,7 +304,7 @@ async function deleteProject(projectId: number) {
   }
 
   try {
-    await apiFetch(`/api/projects/${projectId}`, {
+    await apiFetch(`/api/v1/projects/${projectId}`, {
       method: 'DELETE',
     })
 

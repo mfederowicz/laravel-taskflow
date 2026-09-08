@@ -33,7 +33,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $response = $this->getJson('/api/tasks');
+        $response = $this->getJson('/api/v1/tasks');
 
         $response
             ->assertOk()
@@ -50,7 +50,7 @@ class TaskApiTest extends TestCase
             ->for($user)
             ->create();
 
-        $response = $this->postJson('/api/tasks', [
+        $response = $this->postJson('/api/v1/tasks', [
             'project_id' => $project->id,
             'title' => 'Test task',
             'description' => 'Test description',
@@ -84,7 +84,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->getJson("/api/tasks/{$task->id}")
+        $this->getJson("/api/v1/tasks/{$task->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $task->id);
     }
@@ -100,7 +100,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($otherUser);
 
-        $this->getJson("/api/tasks/{$task->id}")
+        $this->getJson("/api/v1/tasks/{$task->id}")
             ->assertForbidden();
     }
 
@@ -119,7 +119,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->putJson("/api/tasks/{$task->id}", [
+        $this->putJson("/api/v1/tasks/{$task->id}", [
             'status' => 'completed',
             'priority' => 'high',
         ])
@@ -138,7 +138,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->deleteJson("/api/tasks/{$task->id}")
+        $this->deleteJson("/api/v1/tasks/{$task->id}")
             ->assertNoContent();
 
         $this->assertDatabaseMissing('tasks', [
@@ -152,7 +152,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/tasks', [])
+        $this->postJson('/api/v1/tasks', [])
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
                 'title',
@@ -167,7 +167,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->postJson('/api/tasks', [
+        $this->postJson('/api/v1/tasks', [
             'title' => 'Invalid task',
             'status' => 'invalid',
             'priority' => 'invalid',
@@ -181,7 +181,7 @@ class TaskApiTest extends TestCase
 
     public function test_unauthenticated_user_cannot_access_tasks(): void
     {
-        $this->getJson('/api/tasks')
+        $this->getJson('/api/v1/tasks')
             ->assertUnauthorized()
             ->assertJson([
                 'success' => false,
@@ -199,7 +199,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $response = $this->postJson('/api/tasks', [
+        $response = $this->postJson('/api/v1/tasks', [
             'project_id' => $project->id,
             'title' => 'Project task',
             'status' => 'pending',
@@ -238,7 +238,7 @@ class TaskApiTest extends TestCase
 
         Sanctum::actingAs($owner);
 
-        $this->putJson("/api/tasks/{$task->id}", [
+        $this->putJson("/api/v1/tasks/{$task->id}", [
             'project_id' => $taskProject->id,
         ])
             ->assertUnprocessable()

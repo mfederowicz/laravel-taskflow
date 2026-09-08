@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
 use Tests\TestCase;
@@ -20,7 +19,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'sanctum')
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertOk();
     }
 
@@ -32,7 +31,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'jwt')
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertOk();
     }
 
@@ -48,7 +47,7 @@ class MultiAuthTest extends TestCase
             'grant_types' => ['password', 'refresh_token'],
         ]);
 
-        $response = $this->postJson('/api/oauth/token', [
+        $response = $this->postJson('/api/v1/oauth/token', [
             'grant_type' => 'password',
             'client_id' => $client->id,
             'client_secret' => $client->plainSecret,
@@ -62,7 +61,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'passport')
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertOk();
     }
 
@@ -72,7 +71,7 @@ class MultiAuthTest extends TestCase
         $token = $user->createToken('test')->plainTextToken;
 
         $this->withToken($token)
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertOk();
     }
 
@@ -83,7 +82,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'something-invalid')
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertUnauthorized()
             ->assertJson([
                 'success' => false,
@@ -99,7 +98,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'sanctum')
-            ->postJson('/api/logout')
+            ->postJson('/api/v1/logout')
             ->assertNoContent();
 
         $this->assertDatabaseMissing('personal_access_tokens', [
@@ -114,12 +113,12 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'jwt')
-            ->postJson('/api/logout')
+            ->postJson('/api/v1/logout')
             ->assertNoContent();
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'jwt')
-            ->getJson('/api/tasks')
+            ->getJson('/api/v1/tasks')
             ->assertUnauthorized();
     }
 
@@ -135,7 +134,7 @@ class MultiAuthTest extends TestCase
             'grant_types' => ['password', 'refresh_token'],
         ]);
 
-        $response = $this->postJson('/api/oauth/token', [
+        $response = $this->postJson('/api/v1/oauth/token', [
             'grant_type' => 'password',
             'client_id' => $client->id,
             'client_secret' => $client->plainSecret,
@@ -149,7 +148,7 @@ class MultiAuthTest extends TestCase
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'passport')
-            ->postJson('/api/logout')
+            ->postJson('/api/v1/logout')
             ->assertNoContent();
 
         $this->assertTrue(
@@ -159,5 +158,4 @@ class MultiAuthTest extends TestCase
                 ->revoked === true
         );
     }
-
 }

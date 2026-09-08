@@ -7,12 +7,19 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
+use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+#[Group('Tasks')]
 class TaskController extends Controller
 {
+    /**
+     * List the authenticated user's tasks.
+     *
+     * Filterable by status and priority; paginated 10 per page.
+     */
     public function index(Request $request): AnonymousResourceCollection
     {
         $tasks = $request->user()
@@ -32,6 +39,9 @@ class TaskController extends Controller
         return TaskResource::collection($tasks);
     }
 
+    /**
+     * Create a task inside one of the user's projects.
+     */
     public function store(StoreTaskRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -54,6 +64,9 @@ class TaskController extends Controller
         ], 201);
     }
 
+    /**
+     * Update a task.
+     */
     public function update(UpdateTaskRequest $request, Task $task): TaskResource
     {
         $this->authorize('update', $task);
@@ -65,6 +78,9 @@ class TaskController extends Controller
         );
     }
 
+    /**
+     * Delete a task.
+     */
     public function destroy(Task $task): JsonResponse
     {
         $this->authorize('delete', $task);
@@ -74,9 +90,13 @@ class TaskController extends Controller
         return response()->json(null, 204);
     }
 
+    /**
+     * View a single task.
+     */
     public function show(Task $task): TaskResource
     {
         $this->authorize('view', $task);
+
         return new TaskResource($task->load(['user', 'project']));
     }
 }

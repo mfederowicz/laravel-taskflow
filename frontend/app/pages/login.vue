@@ -112,13 +112,13 @@ async function login() {
   
   try {
     if (authMethod.value === 'sanctum') {
-      // Sanctum login (current /api/login)
+      // Sanctum login (current /api/v1/login)
       const response = await $fetch<{
         data: {
           user: { id: number; name: string; email: string }
           token: string
         }
-      }>('/api/login', {
+      }>('/api/v1/login', {
         method: 'POST',
         body: {
           email: email.value,
@@ -134,7 +134,7 @@ async function login() {
         success: boolean
         token: string
         token_type: string
-      }>('/api/login/jwt', {
+      }>('/api/v1/login/jwt', {
         method: 'POST',
         body: {
           email: email.value,
@@ -157,13 +157,13 @@ async function login() {
       const clientResponse = await $fetch<{
         client_id: string
         client_secret: string
-      }>('/api/oauth/client')
+      }>('/api/v1/oauth/client')
       
       const tokenResponse = await $fetch<{
         access_token: string
         token_type: string
         expires_in: number
-      }>('/api/oauth/token', {
+      }>('/api/v1/oauth/token', {
         method: 'POST',
         body: {
           grant_type: 'password',

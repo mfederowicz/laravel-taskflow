@@ -7,40 +7,51 @@ use App\Http\Controllers\Api\TaskController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'application' => 'TaskFlow API',
-    ]);
-});
+Route::prefix('v1')->group(function () {
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/login/jwt', [AuthController::class, 'loginJwt']);
-Route::get('/oauth/client', [AuthController::class, 'getPassportClient']);
+    Route::get('/oauth/client', [AuthController::class, 'getPassportClient']);
 
-Route::middleware('auth.multi')->group(function () {
+    Route::group([
+        'as' => 'passport.',
+        'prefix' => 'oauth',
+        'namespace' => 'Laravel\Passport\Http\Controllers',
+        'middleware' => config('passport.middleware', []),
+    ], fn () => require __DIR__.'/passport.php');
 
-    Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+    Route::get('/health', function () {
+        return response()->json([
+            'status' => 'ok',
+            'application' => 'TaskFlow API',
+        ]);
     });
 
-    // Tasks
-    Route::get('/tasks', [TaskController::class, 'index']);
-    Route::post('/tasks', [TaskController::class, 'store']);
-    Route::get('/tasks/{task}', [TaskController::class, 'show']);
-    Route::put('/tasks/{task}', [TaskController::class, 'update']);
-    Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login/jwt', [AuthController::class, 'loginJwt']);
 
-    // Projects
-    Route::get('/projects', [ProjectController::class, 'index']);
-    Route::post('/projects', [ProjectController::class, 'store']);
-    Route::get('/projects/{project}', [ProjectController::class, 'show']);
-    Route::put('/projects/{project}', [ProjectController::class, 'update']);
-    Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+    Route::middleware('auth.multi')->group(function () {
 
-    // Comments
-    Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);
-    Route::post('/tasks/{task}/comments', [CommentController::class, 'store']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/user', function (Request $request) {
+            return $request->user();
+        });
+
+        // Tasks
+        Route::get('/tasks', [TaskController::class, 'index']);
+        Route::post('/tasks', [TaskController::class, 'store']);
+        Route::get('/tasks/{task}', [TaskController::class, 'show']);
+        Route::put('/tasks/{task}', [TaskController::class, 'update']);
+        Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+
+        // Projects
+        Route::get('/projects', [ProjectController::class, 'index']);
+        Route::post('/projects', [ProjectController::class, 'store']);
+        Route::get('/projects/{project}', [ProjectController::class, 'show']);
+        Route::put('/projects/{project}', [ProjectController::class, 'update']);
+        Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+
+        // Comments
+        Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);
+        Route::post('/tasks/{task}/comments', [CommentController::class, 'store']);
+    });
 });

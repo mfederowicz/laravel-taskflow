@@ -10,6 +10,10 @@
       Projects
     </NuxtLink>
 
+    <a href="/api/docs" target="_blank" rel="noopener">
+      API docs
+    </a>
+
     <button type="button" @click="handleLogout">
       Logout
     </button>

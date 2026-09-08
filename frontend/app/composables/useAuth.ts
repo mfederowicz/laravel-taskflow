@@ -40,7 +40,7 @@ function useAuth() {
 
         if (currentToken) {
             try {
-                await $fetch('/api/logout', {
+                await $fetch('/api/v1/logout', {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${currentToken}`,

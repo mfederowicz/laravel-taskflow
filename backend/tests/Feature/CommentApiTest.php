@@ -35,7 +35,7 @@ class CommentApiTest extends TestCase
 
         Sanctum::actingAs($user);
 
-        $this->getJson("/api/tasks/{$task->id}/comments")
+        $this->getJson("/api/v1/tasks/{$task->id}/comments")
             ->assertOk()
             ->assertJsonCount(3, 'data');
     }
@@ -56,7 +56,7 @@ class CommentApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $response = $this->postJson(
-            "/api/tasks/{$task->id}/comments",
+            "/api/v1/tasks/{$task->id}/comments",
             [
                 'body' => 'Looks good to me.',
             ]
@@ -90,7 +90,7 @@ class CommentApiTest extends TestCase
 
         Sanctum::actingAs($otherUser);
 
-        $this->getJson("/api/tasks/{$task->id}/comments")
+        $this->getJson("/api/v1/tasks/{$task->id}/comments")
             ->assertForbidden();
     }
 
@@ -111,7 +111,7 @@ class CommentApiTest extends TestCase
         Sanctum::actingAs($otherUser);
 
         $this->postJson(
-            "/api/tasks/{$task->id}/comments",
+            "/api/v1/tasks/{$task->id}/comments",
             [
                 'body' => 'Unauthorized comment.',
             ]
@@ -134,7 +134,7 @@ class CommentApiTest extends TestCase
         Sanctum::actingAs($user);
 
         $this->postJson(
-            "/api/tasks/{$task->id}/comments",
+            "/api/v1/tasks/{$task->id}/comments",
             []
         )
             ->assertUnprocessable()
@@ -147,7 +147,7 @@ class CommentApiTest extends TestCase
     {
         $task = Task::factory()->create();
 
-        $this->getJson("/api/tasks/{$task->id}/comments")
+        $this->getJson("/api/v1/tasks/{$task->id}/comments")
             ->assertUnauthorized()
             ->assertJson([
                 'success' => false,

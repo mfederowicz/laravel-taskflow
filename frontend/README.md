@@ -53,9 +53,9 @@ Nuxt 4 auto-imports pages, components, and composables — `useApi`/`useAuth` ar
 
 The login page (`app/pages/login.vue`) lets the user pick one of three methods, all supported by the API:
 
-- **Sanctum** — `POST /api/login`
-- **JWT** — `POST /api/login/jwt`
-- **Passport** — OAuth2 password grant via `GET /api/oauth/client` + `POST /api/oauth/token`
+- **Sanctum** — `POST /api/v1/login`
+- **JWT** — `POST /api/v1/login/jwt`
+- **Passport** — OAuth2 password grant via `GET /api/v1/oauth/client` + `POST /api/v1/oauth/token`
 
 The selected token and method are stored in `localStorage` and attached to every request:
 

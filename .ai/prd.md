@@ -37,35 +37,35 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 
 ### Authentication
 
-- `POST /api/register` — create account; returns a Sanctum token.
-- `POST /api/login` — Sanctum login (email + password) → token.
-- `POST /api/login/jwt` — JWT login → bearer token.
-- `GET /api/oauth/client` — create/return a password-grant Passport client (dev convenience).
-- `POST /api/oauth/token` — Passport OAuth2 password grant (native endpoint).
-- `POST /api/logout` — revoke token for the active auth method.
-- `GET /api/user` — return the authenticated user.
+- `POST /api/v1/register` — create account; returns a Sanctum token.
+- `POST /api/v1/login` — Sanctum login (email + password) → token.
+- `POST /api/v1/login/jwt` — JWT login → bearer token.
+- `GET /api/v1/oauth/client` — create/return a password-grant Passport client (dev convenience).
+- `POST /api/v1/oauth/token` — Passport OAuth2 password grant (native endpoint).
+- `POST /api/v1/logout` — revoke token for the active auth method.
+- `GET /api/v1/user` — return the authenticated user.
 - The auth method used by a request is declared via the `X-Auth-Method` header (`sanctum` default, `jwt`, or `passport`) and enforced by the `auth.multi` middleware.
 
 ### Projects
 
-- `GET /api/projects`, `GET /api/projects/{project}`
-- `POST /api/projects`
-- `PUT /api/projects/{project}` / `PATCH`
-- `DELETE /api/projects/{project}`
+- `GET /api/v1/projects`, `GET /api/v1/projects/{project}`
+- `POST /api/v1/projects`
+- `PUT /api/v1/projects/{project}` / `PATCH`
+- `DELETE /api/v1/projects/{project}`
 - Fields: `name` (required), `description` (nullable).
 - Ownership enforced by `ProjectPolicy` (owner-only view/update/delete).
 
 ### Tasks
 
-- `GET /api/tasks`, `GET /api/tasks/{task}`
-- `POST /api/tasks`, `PUT /api/tasks/{task}`, `DELETE /api/tasks/{task}`
+- `GET /api/v1/tasks`, `GET /api/v1/tasks/{task}`
+- `POST /api/v1/tasks`, `PUT /api/v1/tasks/{task}`, `DELETE /api/v1/tasks/{task}`
 - Fields: `title` (required), `description`, `status` (`pending` default), `priority` (`medium` default), `due_date`, optional `project_id`.
 - Ownership enforced by `TaskPolicy` (owner-only view/update/delete).
 
 ### Comments
 
-- `GET /api/tasks/{task}/comments`
-- `POST /api/tasks/{task}/comments`
+- `GET /api/v1/tasks/{task}/comments`
+- `POST /api/v1/tasks/{task}/comments`
 - Fields: `body` (required); `task_id` and `user_id` set server-side.
 - Comments are nested under tasks; no update/delete endpoints in the current scope.
 
