@@ -131,9 +131,10 @@ async function login() {
     } else if (authMethod.value === 'jwt') {
       // JWT login
       const response = await $fetch<{
-        success: boolean
-        token: string
-        token_type: string
+        data: {
+          user: { id: number; name: string; email: string }
+          token: string
+        }
       }>('/api/v1/login/jwt', {
         method: 'POST',
         body: {
@@ -144,12 +145,8 @@ async function login() {
           'Accept': 'application/json'
         }
       })
-      
-      if (!response.success) {
-        throw new Error('Invalid credentials')
-      }
-      
-      setToken(response.token)
+
+      setToken(response.data.token)
       setAuthMethod('jwt')
     } else if (authMethod.value === 'passport') {
       // Passport login via OAuth token endpoint

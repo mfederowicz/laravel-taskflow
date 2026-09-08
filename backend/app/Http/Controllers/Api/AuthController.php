@@ -108,8 +108,10 @@ class AuthController extends Controller
      * Sign in with JWT.
      *
      * Issues a signed JWT bearer token (tymon/jwt-auth).
+     *
+     * Response shape matches the Sanctum login for a consistent frontend.
      */
-    public function loginJwt(Request $request)
+    public function loginJwt(Request $request): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -124,9 +126,10 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'success' => true,
-            'token' => $token,
-            'token_type' => 'Bearer',
+            'data' => [
+                'user' => auth('jwt')->user(),
+                'token' => $token,
+            ],
         ]);
     }
 
