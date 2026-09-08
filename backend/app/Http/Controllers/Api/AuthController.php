@@ -129,7 +129,7 @@ class AuthController extends Controller
 
         return response()->json([
             'data' => [
-                'user' => auth('jwt')->user(),
+                'user' => JWTAuth::user(),
                 'token' => $token,
             ],
         ]);
