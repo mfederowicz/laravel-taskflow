@@ -323,6 +323,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: 'auth',
+})
+
 useHead({
   title: 'Tasks',
 })
@@ -338,7 +342,6 @@ import type {
   ProjectsResponse,
 } from '~/types/project'
 
-const { getToken } = useAuth()
 const { apiFetch } = useApi()
 
 const comments = ref<Record<number, Comment[]>>({})
@@ -392,13 +395,6 @@ const updateError = ref('')
 const updateValidationErrors = ref<Record<string, string[]>>({})
 
 onMounted(async () => {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   await Promise.all([
     loadTasksWithFilters(),
     loadProjects(),
@@ -420,13 +416,6 @@ async function loadProjects() {
 }
 
 async function loadTasksWithFilters() {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   pending.value = true
   error.value = ''
 
@@ -465,13 +454,6 @@ async function applyFilters() {
 }
 
 async function createTask() {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   creating.value = true
   createError.value = ''
   validationErrors.value = {}
@@ -510,13 +492,6 @@ async function createTask() {
 }
 
 async function updateTask() {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   if (editingTaskId.value === null) {
     return
   }
@@ -563,13 +538,6 @@ async function updateTask() {
 
 }
 async function deleteTask(taskId: number) {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   try {
     await apiFetch(`/api/v1/tasks/${taskId}`, {
       method: 'DELETE',
@@ -619,13 +587,6 @@ function cancelEditing() {
 }
 
 async function loadComments(taskId: number) {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   commentLoading.value[taskId] = true
   commentErrors.value[taskId] = ''
 
@@ -642,13 +603,6 @@ async function loadComments(taskId: number) {
   }
 }
 async function createComment(taskId: number) {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   const body = commentBodies.value[taskId]?.trim()
 
   if (!body) {

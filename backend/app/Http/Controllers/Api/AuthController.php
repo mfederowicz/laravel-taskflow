@@ -7,6 +7,7 @@ use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client;
@@ -15,6 +16,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 #[Group('Authentication')]
 class AuthController extends Controller
 {
+    public const PASSPORT_CLIENT_NAME = 'TaskFlow auto client';
+
     /**
      * Create a new user account.
      *
@@ -80,7 +83,7 @@ class AuthController extends Controller
      * Revokes the active token according to the selected authentication method
      * (Sanctum: delete token, JWT: blacklist, Passport: revoke token).
      */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request): Response
     {
         $user = $request->user();
 
@@ -100,15 +103,17 @@ class AuthController extends Controller
                 break;
         }
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 
     /**
      * Sign in with JWT.
      *
      * Issues a signed JWT bearer token (tymon/jwt-auth).
+     *
+     * Response shape matches the Sanctum login for a consistent frontend.
      */
-    public function loginJwt(Request $request)
+    public function loginJwt(Request $request): JsonResponse
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -123,21 +128,29 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'success' => true,
-            'token' => $token,
-            'token_type' => 'Bearer',
+            'data' => [
+                'user' => JWTAuth::user(),
+                'token' => $token,
+            ],
         ]);
     }
 
     /**
      * Create a Passport OAuth2 client.
      *
-     * Dev convenience endpoint that creates (or returns) a password-grant
-     * client used with POST /oauth/token.
+     * Dev convenience endpoint used with POST /oauth/token. Passport hashes
+     * client secrets, so a fresh client is created per request; only clients
+     * tagged by this endpoint are pruned, so manually created password-grant
+     * clients (e.g. via passport:client) are preserved.
      */
     public function getPassportClient(): JsonResponse
     {
+        Client::where('provider', 'users')
+            ->where('name', self::PASSPORT_CLIENT_NAME)
+            ->delete();
+
         $client = Client::factory()->create([
+            'name' => self::PASSPORT_CLIENT_NAME,
             'provider' => 'users',
             'grant_types' => ['password', 'refresh_token'],
         ]);

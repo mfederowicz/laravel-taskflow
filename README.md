@@ -175,11 +175,7 @@ Generate passport keys (only once if they don't exist in backend/storage):
 ./bin/artisan passport:keys
 ```
 
-Fix ownership of database dir:
-
-```bash
-sudo chown www-data:www-data backend/database/ -R
-```
+Database directory ownership is handled automatically — `bin/run.sh` maps your host user/group into the containers, so the SQLite file created by `migrate` is owned by your user.
 
 Run migrations:
 
@@ -237,7 +233,7 @@ There is intentionally no database container in the current development environm
 
 ## Environment
 
-The root `.env` file is shared with the backend container.
+The root `.env` file is injected into the backend container as environment variables (via Compose `env_file`).
 
 Example development configuration:
 
@@ -583,8 +579,11 @@ Example:
 Comments are associated with Tasks.
 
 ```text
-GET  /api/v1/tasks/{task}/comments
-POST /api/v1/tasks/{task}/comments
+GET    /api/v1/tasks/{task}/comments
+POST   /api/v1/tasks/{task}/comments
+GET    /api/v1/tasks/{task}/comments/{comment}
+PUT    /api/v1/tasks/{task}/comments/{comment}
+DELETE /api/v1/tasks/{task}/comments/{comment}
 ```
 
 Example:
@@ -946,40 +945,40 @@ Relevant repository structure:
 
 ```text
 .
-├── .env
-├── .env.example
-├── README.md
-├── app
-│   ├── backend
-│   │   ├── app
-│   │   │   ├── Http
-│   │   │   ├── Models
-│   │   │   └── Policies
-│   │   ├── database
-│   │   ├── routes
-│   │   └── tests
-│   │
-│   └── frontend
-│       ├── app
-│       │   ├── assets
-│       │   ├── components
-│       │   ├── composables
-│       │   ├── pages
-│       │   └── types
-│       └── nuxt.config.ts
+├── backend/                        # Laravel API
+│   ├── app/
+│   │   ├── Http/
+│   │   │   ├── Controllers/Api/
+│   │   │   ├── Middleware/
+│   │   │   ├── Requests/
+│   │   │   └── Resources/
+│   │   ├── Models/
+│   │   └── Policies/
+│   ├── config/
+│   ├── database/                   # migrations + database.sqlite
+│   ├── lang/                       # en, pl validation messages
+│   ├── routes/api.php
+│   └── tests/Feature/
 │
-├── bin
-│   └── artisan
+├── frontend/                       # Nuxt / Vue
+│   └── app/
+│       ├── assets/css/
+│       ├── components/
+│       ├── composables/
+│       ├── middleware/
+│       ├── pages/
+│       ├── plugins/
+│       └── types/
 │
-└── docker
+├── bin/
+│   ├── artisan                     # docker compose wrapper for artisan
+│   └── run.sh                      # docker compose wrapper
+│
+└── docker/
     ├── docker-compose.yml
-    ├── configs
-    │   └── nginx
-    │       └── default.conf
-    ├── image-backend
-    │   └── Dockerfile
-    └── image-frontend
-        └── Dockerfile
+    ├── configs/nginx/default.conf
+    ├── image-backend/Dockerfile
+    └── image-frontend/Dockerfile
 ```
 
 All Docker-related configuration is kept under the `docker/` directory.

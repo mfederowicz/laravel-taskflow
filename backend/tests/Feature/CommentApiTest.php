@@ -154,4 +154,176 @@ class CommentApiTest extends TestCase
                 'message' => 'Unauthenticated.',
             ]);
     }
+
+    public function test_user_can_view_a_single_comment(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($user)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($user)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $this->getJson("/api/v1/tasks/{$task->id}/comments/{$comment->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $comment->id)
+            ->assertJsonPath('data.body', $comment->body);
+    }
+
+    public function test_user_can_update_their_comment(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($user)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($user)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $this->putJson(
+            "/api/v1/tasks/{$task->id}/comments/{$comment->id}",
+            ['body' => 'Updated body.']
+        )
+            ->assertOk()
+            ->assertJsonPath('data.body', 'Updated body.');
+
+        $this->assertDatabaseHas('comments', [
+            'id' => $comment->id,
+            'body' => 'Updated body.',
+        ]);
+    }
+
+    public function test_user_cannot_update_another_users_comment(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($owner)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($owner)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->putJson(
+            "/api/v1/tasks/{$task->id}/comments/{$comment->id}",
+            ['body' => 'Hijacked.']
+        )->assertForbidden();
+    }
+
+    public function test_user_can_delete_their_comment(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($user)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($user)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson("/api/v1/tasks/{$task->id}/comments/{$comment->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('comments', [
+            'id' => $comment->id,
+        ]);
+    }
+
+    public function test_user_cannot_delete_another_users_comment(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($owner)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($owner)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->deleteJson("/api/v1/tasks/{$task->id}/comments/{$comment->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('comments', [
+            'id' => $comment->id,
+        ]);
+    }
+
+    public function test_update_comment_requires_a_body(): void
+    {
+        $user = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($user)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($user)
+            ->for($task)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $this->putJson(
+            "/api/v1/tasks/{$task->id}/comments/{$comment->id}",
+            []
+        )
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'body',
+            ]);
+    }
+
+    public function test_comment_must_belong_to_the_task(): void
+    {
+        $user = User::factory()->create();
+
+        $project = Project::factory()
+            ->for($user)
+            ->create();
+
+        $taskA = Task::factory()
+            ->for($user)
+            ->for($project)
+            ->create();
+
+        $taskB = Task::factory()
+            ->for($user)
+            ->for($project)
+            ->create();
+
+        $comment = Comment::factory()
+            ->for($user)
+            ->for($taskA)
+            ->create();
+
+        Sanctum::actingAs($user);
+
+        $this->getJson("/api/v1/tasks/{$taskB->id}/comments/{$comment->id}")
+            ->assertNotFound();
+    }
 }

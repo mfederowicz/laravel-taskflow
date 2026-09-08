@@ -120,7 +120,11 @@ class ProjectApiTest extends TestCase
             'title' => 'Unauthorized task',
             'status' => 'pending',
             'priority' => 'medium',
-        ])->assertNotFound();
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'project_id',
+            ]);
     }
 
     public function test_project_creation_requires_a_name(): void

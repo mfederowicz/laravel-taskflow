@@ -36,7 +36,7 @@ Invalid/unknown method or an invalid token → `401 { "success": false, "message
 |--------|-----------------------|-----------|----------------------------------------------|
 | POST   | `/api/v1/register`       | none      | Creates user, returns Sanctum token (`201`)  |
 | POST   | `/api/v1/login`          | none      | Sanctum login → `{ data: { user, token } }`  |
-| POST   | `/api/v1/login/jwt`      | none      | JWT login → `{ success, token, token_type }` |
+| POST   | `/api/v1/login/jwt`      | none      | JWT login → `{ data: { user, token } }`  |
 | GET    | `/api/v1/oauth/client` | none      | Dev helper — creates a password-grant client  |
 | POST   | `/api/v1/oauth/token`  | none      | Passport OAuth2 token endpoint (built-in)     |
 | POST   | `/api/v1/logout`         | `auth.multi` | Revokes according to the method in use    |
@@ -51,7 +51,7 @@ Invalid/unknown method or an invalid token → `401 { "success": false, "message
 
 ### JWT
 1. `POST /api/v1/login/jwt` with `{ email, password }`.
-2. Response: `{ success, token, token_type: "Bearer" }`.
+2. Response: `{ data: { user, token } }` — same shape as Sanctum login.
 
 ### Passport (OAuth2 password grant)
 1. `GET /api/v1/oauth/client` → `{ client_id, client_secret }` (dev-only; creates a client on the fly).

@@ -129,6 +129,10 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: 'auth',
+})
+
 useHead({
   title: 'Projects',
 })
@@ -138,7 +142,6 @@ import type {
   ProjectsResponse,
 } from '~/types/project'
 
-const { getToken } = useAuth()
 const { apiFetch } = useApi()
 
 const projects = ref<Project[]>([])
@@ -166,13 +169,6 @@ const updateError = ref('')
 const updateValidationErrors = ref<Record<string, string[]>>({})
 
 onMounted(async () => {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   await loadProjects()
 })
 
@@ -191,13 +187,6 @@ async function loadProjects() {
 }
 
 async function createProject() {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   creating.value = true
   createError.value = ''
   validationErrors.value = {}
@@ -247,13 +236,6 @@ function cancelEditing() {
 }
 
 async function updateProject() {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   if (editingProjectId.value === null) {
     return
   }
@@ -296,13 +278,6 @@ async function updateProject() {
 }
 
 async function deleteProject(projectId: number) {
-  const token = getToken()
-
-  if (!token) {
-    await navigateTo('/login')
-    return
-  }
-
   try {
     await apiFetch(`/api/v1/projects/${projectId}`, {
       method: 'DELETE',

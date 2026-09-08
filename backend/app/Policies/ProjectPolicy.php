@@ -4,16 +4,19 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ProjectPolicy
 {
     /**
      * Determine whether the user can view any models.
+     *
+     * Any authenticated user may access the project list. Ownership is
+     * enforced by the controller, which scopes the query to the current
+     * user's projects (e.g. $user->projects()).
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -26,10 +29,14 @@ class ProjectPolicy
 
     /**
      * Determine whether the user can create models.
+     *
+     * Any authenticated user may create a project. The project is always
+     * attached to the current user by the controller
+     * (e.g. $user->projects()->create(...)), so it is owned by them.
      */
     public function create(User $user): bool
     {
-        return false;
+        return true;
     }
 
     /**

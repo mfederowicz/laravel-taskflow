@@ -12,9 +12,6 @@ services:
     user: "${USER_UID:-1000}:${USER_GID:-33}"
     volumes:
       - ../backend:/var/www/html
-      - ../.env:/var/www/html/.env
-    ports:
-      - 9000
     env_file:
       - ../.env
 
