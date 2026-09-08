@@ -6,8 +6,10 @@ The project focuses on clean, understandable fundamentals such as authentication
 
 ## Features
 
-* User registration and login
+* Multi-method API authentication
 * Laravel Sanctum API authentication
+* JWT API authentication
+* Laravel Passport OAuth2 authentication
 * Token-based API authentication
 * Logout and authentication state handling
 * User-owned Projects
@@ -37,6 +39,8 @@ The project focuses on clean, understandable fundamentals such as authentication
 * PHP 8.5
 * Laravel 13
 * Laravel Sanctum
+* `tymon/jwt-auth`
+* Laravel Passport
 * Eloquent ORM
 * SQLite for local development and automated tests
 * MySQL-compatible configuration for environments using MySQL
@@ -157,11 +161,31 @@ Generate the Laravel application key:
 ./bin/artisan key:generate
 ```
 
+Generate JWT_SECRET (only once if JWT_SECRET is empty):
+
+```bash
+./bin/artisan jwt:secret
+```
+
+Generate passport keys (only once if they don't exist in app/backend/storage):
+
+```bash
+./bin/artisan passport:keys
+```
+
+Fix ownership of database dir:
+
+```bash
+sudo chown www-data:www-data app/backend/database/ -R
+```
+
 Run migrations:
 
 ```bash
-./bin/artisan migrate
+./bin/artisan migrate --seed
 ```
+
+
 
 The application is then available through the configured host.
 
@@ -223,7 +247,18 @@ APP_DEBUG=true
 APP_URL=http://localhost:8080
 APP_PORT=8080
 DB_CONNECTION=sqlite
+JWT_SECRET=
 ```
+
+JWT authentication requires `JWT_SECRET`.
+
+If the local `.env` does not already contain a JWT secret, generate one with:
+
+```bash
+./bin/artisan jwt:secret
+```
+
+
 
 The local `.env` file is not committed to Git.
 
@@ -311,7 +346,74 @@ Generated files are handled on the host so that newly created project files are 
 
 ## Authentication
 
-Authentication is implemented with Laravel Sanctum.
+TaskFlow demonstrates three authentication mechanisms:
+
+- **Sanctum** — Laravel personal access tokens
+- **JWT** — `tymon/jwt-auth`
+- **Passport** — OAuth2 authorization server
+
+Protected API routes use the `auth.multi` middleware. The authentication
+method is selected with the `X-Auth-Method` request header.
+
+Supported values:
+
+- `sanctum`
+- `jwt`
+- `passport`
+
+If `X-Auth-Method` is omitted, Sanctum is used by default.
+
+Example:
+
+```http
+GET /api/tasks
+Authorization: Bearer <token>
+X-Auth-Method: jwt
+```
+
+### Passport setup
+
+Passport uses OAuth2 keys stored in the backend storage directory:
+
+```text
+app/backend/storage/oauth-private.key
+app/backend/storage/oauth-public.key
+```
+
+These keys are environment-specific and should not be committed to the repository.
+
+Passport OAuth clients are stored in the application's `oauth_clients` table.
+
+For manual API testing with the password grant, create a password-grant OAuth client using the Passport Artisan command and keep its client ID and secret available for your requests.
+
+The OAuth token endpoint is:
+
+```text
+POST /api/oauth/token
+```
+
+The endpoint accepts OAuth2 parameters such as:
+
+```json
+{
+  "grant_type": "password",
+  "client_id": "<client-id>",
+  "client_secret": "<client-secret>",
+  "username": "john@example.com",
+  "password": "password123",
+  "scope": ""
+}
+```
+
+The returned `access_token` can then be used with:
+
+```http
+Authorization: Bearer <access-token>
+X-Auth-Method: passport
+```
+
+The project tests do not depend on a manually created OAuth client. Passport clients required by tests are created inside the test database.
+
 
 ### Register
 
@@ -347,6 +449,31 @@ Example request:
 
 The API returns a Sanctum bearer token.
 
+JWT login uses the dedicated endpoint:
+
+```text
+POST /api/login/jwt
+```
+
+Example request:
+
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+The API returns a JWT bearer token.
+
+For Passport login, the frontend first requests the password-grant OAuth client:
+
+```text
+GET /api/oauth/client
+```
+
+and then exchanges the credentials at `POST /api/oauth/token`.
+
 Authenticated requests use:
 
 ```text
@@ -367,13 +494,15 @@ Requires authentication.
 POST /api/logout
 ```
 
-Requires authentication.
+Requires authentication. The behavior depends on the authentication method sent via `X-Auth-Method`:
 
-The current Sanctum access token is deleted.
+- `sanctum` — deletes the current Sanctum access token
+- `jwt` — invalidates the current JWT
+- `passport` — revokes the current Passport access token
 
 ## API
 
-All protected API routes require a valid Sanctum bearer token.
+All protected API routes require a valid bearer token authenticated through the selected authentication method.
 
 ### Tasks
 
@@ -595,7 +724,7 @@ app/frontend/app/assets/css/main.css
 
 ### Authentication state
 
-The frontend stores the Sanctum token in browser `localStorage`.
+The frontend stores the bearer token and the selected authentication method in browser `localStorage`.
 
 The authentication composable is:
 
@@ -605,10 +734,22 @@ app/frontend/app/composables/useAuth.ts
 
 It handles:
 
-* storing the token
-* retrieving the token
-* removing the token
+* storing the token and selected method
+* retrieving the token and selected method
+* removing the token and selected method
 * logout
+
+The login page (`app/frontend/app/pages/login.vue`) lets the user pick the authentication method (Sanctum, JWT, or Passport).
+
+API requests centralize their headers through:
+
+```text
+app/frontend/app/composables/useApi.ts
+```
+
+which sets `Accept`, `X-Auth-Method`, and the `Authorization` bearer header on every request.
+
+A client plugin (`app/frontend/app/plugins/auth-header.ts`) restores the stored authentication method so subsequent requests keep using the same method.
 
 Browser-only APIs are guarded so they are not accessed during Nuxt server-side rendering.
 
@@ -674,14 +815,9 @@ Run a specific test class:
 
 ```bash
 ./bin/artisan test --filter=TaskApiTest
-```
-
-```bash
 ./bin/artisan test --filter=ProjectApiTest
-```
-
-```bash
 ./bin/artisan test --filter=CommentApiTest
+./bin/artisan test --filter=MultiAuthTest
 ```
 
 Current test coverage includes:
@@ -717,7 +853,23 @@ Current test coverage includes:
 * validation
 * unauthenticated access
 
+### Multi-authentication
+
+`MultiAuthTest` verifies authentication through all three supported mechanisms:
+
+* Sanctum authentication with an explicit `X-Auth-Method: sanctum` header
+* JWT authentication with an explicit `X-Auth-Method: jwt` header
+* Passport authentication with an explicit `X-Auth-Method: passport` header
+* Sanctum as the default when `X-Auth-Method` is not provided
+* `401 Unauthorized` for an invalid `X-Auth-Method`
+* logout deletes the current Sanctum token
+* logout invalidates the current JWT
+* logout revokes the current Passport token
+
+The Passport test creates its OAuth client and obtains an access token through the OAuth2 password grant, keeping the test independent of manually configured OAuth clients.
+
 Tests use Laravel's `RefreshDatabase` and Sanctum's `actingAs()` helpers.
+
 
 ## Project Structure
 
@@ -815,59 +967,15 @@ SQLite supports transactions, so the development database does not prevent using
 
 ## Development Commands
 
-Start the application:
+Control the Docker application with `bin/run.sh`:
 
 ```bash
-./bin/run.sh
+./bin/run.sh        # start
+./bin/run.sh build  # rebuild
+./bin/run.sh stop   # stop
 ```
 
-Rebuild:
-
-```bash
-./bin/run.sh build
-```
-
-Stop:
-
-```bash
-./bin/run.sh stop
-```
-
-Laravel version:
-
-```bash
-./bin/artisan --version
-```
-
-Migrations:
-
-```bash
-./bin/artisan migrate
-```
-
-Fresh database:
-
-```bash
-./bin/artisan migrate:fresh --seed
-```
-
-Routes:
-
-```bash
-./bin/artisan route:list
-```
-
-Tests:
-
-```bash
-./bin/artisan test
-```
-
-Laravel shell:
-
-```bash
-./bin/artisan tinker
-```
+The Artisan Helper section above documents migration, route, test, and shell commands.
 
 ## Future Improvements
 

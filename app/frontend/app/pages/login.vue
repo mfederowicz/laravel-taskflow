@@ -9,6 +9,16 @@
       </p>
 
       <h2>Sign in</h2>
+      
+      <!-- Auth mode dropdown -->
+      <div class="auth-method-select">
+        <label for="auth-method">Authentication Method</label>
+        <select id="auth-method" v-model="authMethod">
+          <option value="sanctum">Sanctum (Personal Access Tokens)</option>
+          <option value="jwt">JWT (Bearer Tokens)</option>
+          <option value="passport">Passport (OAuth2)</option>
+        </select>
+      </div>
 
       <form @submit.prevent="login">
         <div>
@@ -77,44 +87,101 @@
 
 
 <script setup lang="ts">
-useHead({
-  title: 'Sign in',
-})
+import useAuth from '@/composables/useAuth'
+import { navigateTo } from '#app'
+
 const email = ref('')
 const password = ref('')
+const authMethod = ref<'sanctum' | 'jwt' | 'passport'>('sanctum')
 const pending = ref(false)
 const error = ref('')
 
-const { setToken } = useAuth()
+const { setToken, setAuthMethod, getToken } = useAuth()
+
+// Initialize auth method from localStorage on page load
+onMounted(() => {
+  const stored = localStorage.getItem('auth-method')
+  if (stored === 'sanctum' || stored === 'jwt' || stored === 'passport') {
+    authMethod.value = stored
+  }
+})
 
 async function login() {
   pending.value = true
   error.value = ''
-
+  
   try {
-    const response = await $fetch<{
-      data: {
-        user: {
-          id: number
-          name: string
-          email: string
+    if (authMethod.value === 'sanctum') {
+      // Sanctum login (current /api/login)
+      const response = await $fetch<{
+        data: {
+          user: { id: number; name: string; email: string }
+          token: string
         }
+      }>('/api/login', {
+        method: 'POST',
+        body: {
+          email: email.value,
+          password: password.value,
+        },
+      })
+      
+      setToken(response.data.token)
+      setAuthMethod('sanctum')
+    } else if (authMethod.value === 'jwt') {
+      // JWT login
+      const response = await $fetch<{
+        success: boolean
         token: string
+        token_type: string
+      }>('/api/login/jwt', {
+        method: 'POST',
+        body: {
+          email: email.value,
+          password: password.value,
+        },
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+      
+      if (!response.success) {
+        throw new Error('Invalid credentials')
       }
-    }>('/api/login', {
-      method: 'POST',
-      body: {
-        email: email.value,
-        password: password.value,
-      },
-    })
-
-    setToken(response.data.token)
-
+      
+      setToken(response.token)
+      setAuthMethod('jwt')
+    } else if (authMethod.value === 'passport') {
+      // Passport login via OAuth token endpoint
+      // First get client credentials
+      const clientResponse = await $fetch<{
+        client_id: string
+        client_secret: string
+      }>('/api/oauth/client')
+      
+      const tokenResponse = await $fetch<{
+        access_token: string
+        token_type: string
+        expires_in: number
+      }>('/api/oauth/token', {
+        method: 'POST',
+        body: {
+          grant_type: 'password',
+          client_id: clientResponse.client_id,
+          client_secret: clientResponse.client_secret,
+          username: email.value,
+          password: password.value,
+          scope: '',
+        },
+      })
+      
+      setToken(tokenResponse.access_token)
+      setAuthMethod('passport')
+    }
+    
     await navigateTo('/tasks')
   } catch (err: any) {
-    error.value =
-        err?.data?.message ?? 'Invalid email or password.'
+    error.value = err?.data?.message ?? 'Invalid email or password.'
   } finally {
     pending.value = false
   }

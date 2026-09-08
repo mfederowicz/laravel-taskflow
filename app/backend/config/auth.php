@@ -42,6 +42,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'jwt' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'passport' => [
+            'driver' => 'passport',
+            'provider' => 'users',
+        ],
     ],
 
     /*

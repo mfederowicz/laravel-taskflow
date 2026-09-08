@@ -139,6 +139,7 @@ import type {
 } from '~/types/project'
 
 const { getToken } = useAuth()
+const { apiFetch } = useApi()
 
 const projects = ref<Project[]>([])
 const pending = ref(true)
@@ -172,19 +173,13 @@ onMounted(async () => {
     return
   }
 
-  await loadProjects(token)
+  await loadProjects()
 })
 
-async function loadProjects(token: string) {
+async function loadProjects() {
   try {
-    const response = await $fetch<ProjectsResponse>(
+    const response = await apiFetch<ProjectsResponse>(
         '/api/projects',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        }
     )
 
     projects.value = response.data
@@ -208,14 +203,10 @@ async function createProject() {
   validationErrors.value = {}
 
   try {
-    const response = await $fetch<ProjectResponse>(
+    const response = await apiFetch<ProjectResponse>(
         '/api/projects',
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
           body: {
             name: form.name,
             description: form.description || null,
@@ -272,14 +263,10 @@ async function updateProject() {
   updateValidationErrors.value = {}
 
   try {
-    const response = await $fetch<ProjectResponse>(
+    const response = await apiFetch<ProjectResponse>(
         `/api/projects/${editingProjectId.value}`,
         {
           method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
           body: {
             name: editForm.name,
             description: editForm.description || null,
@@ -317,12 +304,8 @@ async function deleteProject(projectId: number) {
   }
 
   try {
-    await $fetch(`/api/projects/${projectId}`, {
+    await apiFetch(`/api/projects/${projectId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
     })
 
     projects.value = projects.value.filter(
