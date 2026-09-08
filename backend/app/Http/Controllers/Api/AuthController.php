@@ -136,11 +136,16 @@ class AuthController extends Controller
     /**
      * Create a Passport OAuth2 client.
      *
-     * Dev convenience endpoint that creates (or returns) a password-grant
-     * client used with POST /oauth/token.
+     * Dev convenience endpoint used with POST /oauth/token. Passport hashes
+     * client secrets, so a fresh client is created per request; previous
+     * auto-generated password-grant clients are pruned to keep the table clean.
      */
     public function getPassportClient(): JsonResponse
     {
+        Client::where('provider', 'users')
+            ->whereJsonContains('grant_types', 'password')
+            ->delete();
+
         $client = Client::factory()->create([
             'provider' => 'users',
             'grant_types' => ['password', 'refresh_token'],
