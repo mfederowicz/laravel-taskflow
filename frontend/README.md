@@ -1,75 +1,75 @@
-# Nuxt Minimal Starter
+# TaskFlow — Frontend
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Nuxt 4 / Vue 3 client for the TaskFlow task management application. It talks to the Laravel API (in `backend/`) through `/api/*`, proxied by nginx.
 
-## Setup
+## Stack
 
-Make sure to install dependencies:
+- Nuxt 4 (Vue 3)
+- TypeScript
+- No UI/library — plain components and global CSS in `app/assets/css/main.css`
 
-```bash
-# npm
-npm install
+## Repository context
 
-# pnpm
-pnpm install
+This app lives under `frontend/` in the TaskFlow monorepo:
 
-# yarn
-yarn install
+- `backend/` — Laravel REST API
+- `docker/` and `bin/` — Docker Compose stack and helper scripts
+- Root `AGENTS.md` — full workflow; reference docs in `.ai/`
 
-# bun
-bun install
-```
+## Development
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+Everything runs inside Docker. Start the stack from the repo root:
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
+./bin/run.sh start
 ```
 
-## Production
+The frontend container runs the Nuxt dev server on port 3000; nginx serves it at `http://localhost:${APP_PORT}` (default `8080`).
 
-Build the application for production:
+Validate the client with a production build (no test suite is configured):
 
 ```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
+docker compose exec frontend npm run build
 ```
 
-Locally preview production build:
+## What's here
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
+```
+app/
+├── app.vue               # root component
+├── pages/                # index, login, tasks, projects
+├── components/AppNav.vue # shared navigation
+├── composables/
+│   ├── useAuth.ts        # token + auth method persisted in localStorage
+│   └── useApi.ts         # $fetch wrapper adding the auth headers
+├── plugins/auth-header.ts# restores the stored auth method across requests
+├── types/                # task.ts, project.ts
+└── assets/css/main.css   # global styling
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Nuxt 4 auto-imports pages, components, and composables — `useApi`/`useAuth` are used without explicit imports.
+
+## Authentication
+
+The login page (`app/pages/login.vue`) lets the user pick one of three methods, all supported by the API:
+
+- **Sanctum** — `POST /api/login`
+- **JWT** — `POST /api/login/jwt`
+- **Passport** — OAuth2 password grant via `GET /api/oauth/client` + `POST /api/oauth/token`
+
+The selected token and method are stored in `localStorage` and attached to every request:
+
+- `Accept: application/json`
+- `X-Auth-Method: sanctum|jwt|passport`
+- `Authorization: Bearer <token>`
+
+See `.ai/auth-spec.md` for the full contract.
+
+## API calls
+
+All requests go through `useApi()` (`app/composables/useApi.ts`), which wraps `$fetch` and injects the headers above. Deep links pages:
+
+- `/` — landing
+- `/login` — sign in
+- `/tasks` — task list/management
+- `/projects` — project list/management
