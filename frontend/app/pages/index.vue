@@ -1,6 +1,9 @@
 <template>
-
+  <div />
 </template>
+
 <script setup lang="ts">
-await navigateTo('/login')
+definePageMeta({
+  middleware: 'home',
+})
 </script>
