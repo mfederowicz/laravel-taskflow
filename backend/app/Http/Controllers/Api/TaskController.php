@@ -10,6 +10,7 @@ use App\Models\Task;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 #[Group('Tasks')]
@@ -81,13 +82,13 @@ class TaskController extends Controller
     /**
      * Delete a task.
      */
-    public function destroy(Task $task): JsonResponse
+    public function destroy(Task $task): Response
     {
         $this->authorize('delete', $task);
 
         $task->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 
     /**

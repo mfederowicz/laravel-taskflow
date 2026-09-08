@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCommentRequest;
 use App\Http\Resources\CommentResource;
 use App\Models\Task;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -34,7 +35,7 @@ class CommentController extends Controller
     public function store(
         StoreCommentRequest $request,
         Task $task
-    ): CommentResource {
+    ): JsonResponse {
         $this->authorize('view', $task);
 
         $comment = $task->comments()->create([
@@ -42,8 +43,10 @@ class CommentController extends Controller
             'body' => $request->validated()['body'],
         ]);
 
-        return new CommentResource(
-            $comment->load('user')
-        );
+        return response()->json([
+            'data' => new CommentResource(
+                $comment->load('user')
+            ),
+        ], 201);
     }
 }

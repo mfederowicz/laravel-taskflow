@@ -10,6 +10,7 @@ use App\Models\Project;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 #[Group('Projects')]
@@ -73,11 +74,11 @@ class ProjectController extends Controller
     public function destroy(
         Request $request,
         Project $project
-    ): JsonResponse {
+    ): Response {
         $this->authorize('delete', $project);
 
         $project->delete();
 
-        return response()->json(null, 204);
+        return response()->noContent();
     }
 }
