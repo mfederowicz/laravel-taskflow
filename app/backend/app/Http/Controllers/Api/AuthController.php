@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Passport\Client;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -63,7 +64,23 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        $method = $request->header('X-Auth-Method', 'sanctum');
+
+        switch ($method) {
+            case 'jwt':
+                auth('jwt')->logout();
+                break;
+
+            case 'passport':
+                $user->currentAccessToken()?->revoke();
+                break;
+
+            default:
+                $user->currentAccessToken()?->delete();
+                break;
+        }
 
         return response()->json(null, 204);
     }
@@ -87,6 +104,19 @@ class AuthController extends Controller
             'success' => true,
             'token' => $token,
             'token_type' => 'Bearer',
+        ]);
+    }
+
+    public function getPassportClient(): JsonResponse
+    {
+        $client = Client::factory()->create([
+            'provider' => 'users',
+            'grant_types' => ['password', 'refresh_token'],
+        ]);
+
+        return response()->json([
+            'client_id' => $client->id,
+            'client_secret' => $client->plainSecret,
         ]);
     }
 }

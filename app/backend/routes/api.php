@@ -16,6 +16,8 @@ Route::get('/health', function () {
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login/jwt', [AuthController::class, 'loginJwt']);
+Route::get('/oauth/client', [AuthController::class, 'getPassportClient']);
 
 Route::middleware('auth.multi')->group(function () {
 

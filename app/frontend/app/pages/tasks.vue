@@ -339,6 +339,7 @@ import type {
 } from '~/types/project'
 
 const { getToken } = useAuth()
+const { apiFetch } = useApi()
 
 const comments = ref<Record<number, Comment[]>>({})
 const commentBodies = ref<Record<number, string>>({})
@@ -400,20 +401,14 @@ onMounted(async () => {
 
   await Promise.all([
     loadTasksWithFilters(),
-    loadProjects(token),
+    loadProjects(),
   ])
 })
 
-async function loadProjects(token: string) {
+async function loadProjects() {
   try {
-    const response = await $fetch<ProjectsResponse>(
+    const response = await apiFetch<ProjectsResponse>(
         '/api/projects',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        }
     )
 
     projects.value = response.data
@@ -450,14 +445,8 @@ async function loadTasksWithFilters() {
 
     const query = params.toString()
 
-    const response = await $fetch<TasksResponse>(
+    const response = await apiFetch<TasksResponse>(
         query ? `/api/tasks?${query}` : '/api/tasks',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        }
     )
 
     tasks.value = response.data
@@ -488,12 +477,8 @@ async function createTask() {
   validationErrors.value = {}
 
   try {
-    const response = await $fetch<TaskResponse>('/api/tasks', {
+    const response = await apiFetch<TaskResponse>('/api/tasks', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
       body: {
         project_id: Number(form.project_id),
         title: form.title,
@@ -541,14 +526,10 @@ async function updateTask() {
   updateValidationErrors.value = {}
 
   try {
-    const response = await $fetch<TaskResponse>(
+    const response = await apiFetch<TaskResponse>(
         `/api/tasks/${editingTaskId.value}`,
         {
           method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
           body: {
             project_id: Number(editForm.project_id),
             title: editForm.title,
@@ -590,12 +571,8 @@ async function deleteTask(taskId: number) {
   }
 
   try {
-    await $fetch(`/api/tasks/${taskId}`, {
+    await apiFetch(`/api/tasks/${taskId}`, {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-      },
     })
 
     tasks.value = tasks.value.filter(
@@ -653,14 +630,8 @@ async function loadComments(taskId: number) {
   commentErrors.value[taskId] = ''
 
   try {
-    const response = await $fetch<CommentsResponse>(
+    const response = await apiFetch<CommentsResponse>(
         `/api/tasks/${taskId}/comments`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
-        }
     )
 
     comments.value[taskId] = response.data
@@ -688,14 +659,10 @@ async function createComment(taskId: number) {
   commentErrors.value[taskId] = ''
 
   try {
-    const response = await $fetch<{ data: Comment }>(
+    const response = await apiFetch<{ data: Comment }>(
         `/api/tasks/${taskId}/comments`,
         {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/json',
-          },
           body: {
             body,
           },

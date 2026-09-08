@@ -1,5 +1,6 @@
 function useAuth() {
     const token = useState<string | null>('auth-token', () => null)
+    const authMethod = useState<'sanctum' | 'jwt' | 'passport'>('auth-method', () => 'sanctum')
 
     function setToken(value: string) {
         token.value = value
@@ -7,6 +8,15 @@ function useAuth() {
         // @ts-ignore
         if (import.meta.client) {
             localStorage.setItem('token', value)
+        }
+    }
+
+    function setAuthMethod(method: 'sanctum' | 'jwt' | 'passport') {
+        authMethod.value = method
+
+        // @ts-ignore
+        if (import.meta.client) {
+            localStorage.setItem('auth-method', method)
         }
     }
 
@@ -35,6 +45,7 @@ function useAuth() {
                     headers: {
                         Authorization: `Bearer ${currentToken}`,
                         Accept: 'application/json',
+                        'X-Auth-Method': authMethod.value,
                     },
                 })
             } catch {
@@ -47,12 +58,15 @@ function useAuth() {
         // @ts-ignore
         if (import.meta.client) {
             localStorage.removeItem('token')
+            localStorage.removeItem('auth-method')
         }
     }
 
     return {
         token,
+        authMethod,
         setToken,
+        setAuthMethod,
         getToken,
         logout,
     }
