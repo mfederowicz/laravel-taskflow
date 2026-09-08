@@ -16,6 +16,8 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 #[Group('Authentication')]
 class AuthController extends Controller
 {
+    public const PASSPORT_CLIENT_NAME = 'TaskFlow auto client';
+
     /**
      * Create a new user account.
      *
@@ -137,16 +139,18 @@ class AuthController extends Controller
      * Create a Passport OAuth2 client.
      *
      * Dev convenience endpoint used with POST /oauth/token. Passport hashes
-     * client secrets, so a fresh client is created per request; previous
-     * auto-generated password-grant clients are pruned to keep the table clean.
+     * client secrets, so a fresh client is created per request; only clients
+     * tagged by this endpoint are pruned, so manually created password-grant
+     * clients (e.g. via passport:client) are preserved.
      */
     public function getPassportClient(): JsonResponse
     {
         Client::where('provider', 'users')
-            ->whereJsonContains('grant_types', 'password')
+            ->where('name', self::PASSPORT_CLIENT_NAME)
             ->delete();
 
         $client = Client::factory()->create([
+            'name' => self::PASSPORT_CLIENT_NAME,
             'provider' => 'users',
             'grant_types' => ['password', 'refresh_token'],
         ]);
