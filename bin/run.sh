@@ -11,7 +11,7 @@ COMPOSE="docker compose --env-file .env -f docker/docker-compose.yml"
 
 case "${1:-start}" in
     start)
-        #chmod -R ug+rwX app/backend/storage app/backend/bootstrap/cache
+        #chmod -R ug+rwX backend/storage backend/bootstrap/cache
         $COMPOSE up -d
         ;;
 

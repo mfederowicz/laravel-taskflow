@@ -167,7 +167,7 @@ Generate JWT_SECRET (only once if JWT_SECRET is empty):
 ./bin/artisan jwt:secret
 ```
 
-Generate passport keys (only once if they don't exist in app/backend/storage):
+Generate passport keys (only once if they don't exist in backend/storage):
 
 ```bash
 ./bin/artisan passport:keys
@@ -176,7 +176,7 @@ Generate passport keys (only once if they don't exist in app/backend/storage):
 Fix ownership of database dir:
 
 ```bash
-sudo chown www-data:www-data app/backend/database/ -R
+sudo chown www-data:www-data backend/database/ -R
 ```
 
 Run migrations:
@@ -296,7 +296,7 @@ SQLite is used for local development and automated tests because it keeps the pr
 The SQLite database is located at:
 
 ```text
-app/backend/database/database.sqlite
+backend/database/database.sqlite
 ```
 
 Laravel migrations are used to create and evolve the database schema.
@@ -376,8 +376,8 @@ X-Auth-Method: jwt
 Passport uses OAuth2 keys stored in the backend storage directory:
 
 ```text
-app/backend/storage/oauth-private.key
-app/backend/storage/oauth-public.key
+backend/storage/oauth-private.key
+backend/storage/oauth-public.key
 ```
 
 These keys are environment-specific and should not be committed to the repository.
@@ -615,7 +615,7 @@ Validation failures return HTTP `422`.
 The application currently uses Polish Laravel validation messages in:
 
 ```text
-app/backend/lang/pl/validation.php
+backend/lang/pl/validation.php
 ```
 
 The Nuxt frontend displays field-specific validation errors returned by the API.
@@ -699,27 +699,27 @@ This keeps the API behavior predictable for the Nuxt frontend.
 The Nuxt application contains separate pages for authentication, Tasks, and Projects.
 
 ```text
-app/frontend/app/pages/login.vue
-app/frontend/app/pages/tasks.vue
-app/frontend/app/pages/projects.vue
+frontend/app/pages/login.vue
+frontend/app/pages/tasks.vue
+frontend/app/pages/projects.vue
 ```
 
 Shared navigation is implemented as:
 
 ```text
-app/frontend/app/components/AppNav.vue
+frontend/app/components/AppNav.vue
 ```
 
 Shared Task-related TypeScript definitions are stored in:
 
 ```text
-app/frontend/app/types/task.ts
+frontend/app/types/task.ts
 ```
 
 Global styling is stored in:
 
 ```text
-app/frontend/app/assets/css/main.css
+frontend/app/assets/css/main.css
 ```
 
 ### Authentication state
@@ -729,7 +729,7 @@ The frontend stores the bearer token and the selected authentication method in b
 The authentication composable is:
 
 ```text
-app/frontend/app/composables/useAuth.ts
+frontend/app/composables/useAuth.ts
 ```
 
 It handles:
@@ -739,17 +739,17 @@ It handles:
 * removing the token and selected method
 * logout
 
-The login page (`app/frontend/app/pages/login.vue`) lets the user pick the authentication method (Sanctum, JWT, or Passport).
+The login page (`frontend/app/pages/login.vue`) lets the user pick the authentication method (Sanctum, JWT, or Passport).
 
 API requests centralize their headers through:
 
 ```text
-app/frontend/app/composables/useApi.ts
+frontend/app/composables/useApi.ts
 ```
 
 which sets `Accept`, `X-Auth-Method`, and the `Authorization` bearer header on every request.
 
-A client plugin (`app/frontend/app/plugins/auth-header.ts`) restores the stored authentication method so subsequent requests keep using the same method.
+A client plugin (`frontend/app/plugins/auth-header.ts`) restores the stored authentication method so subsequent requests keep using the same method.
 
 Browser-only APIs are guarded so they are not accessed during Nuxt server-side rendering.
 
@@ -805,19 +805,53 @@ No external component library is required.
 
 Laravel feature tests cover the main API behavior.
 
+Everything runs inside the Docker containers (PHP, Composer, Node, and the pinned package/tool versions are only available there — nothing needs to be installed on the host). Start the stack first if it isn't running:
+
+```bash
+./bin/run.sh start
+```
+
 Run the complete test suite with:
 
 ```bash
 ./bin/artisan test
 ```
 
-Run a specific test class:
+`./bin/artisan` is just a wrapper for `docker compose exec backend php artisan <args>`, so the same command works by hand:
+
+```bash
+docker compose exec backend php artisan test
+```
+
+The tests use an in-memory SQLite database (`DB_DATABASE=:memory:`), so no migrations or database setup are required before running them.
+
+Run a specific test class or method:
 
 ```bash
 ./bin/artisan test --filter=TaskApiTest
 ./bin/artisan test --filter=ProjectApiTest
 ./bin/artisan test --filter=CommentApiTest
 ./bin/artisan test --filter=MultiAuthTest
+./bin/artisan test --filter=test_logout_invalidates_jwt_token
+```
+
+Or run a single test file:
+
+```bash
+./bin/artisan test tests/Feature/MultiAuthTest.php
+```
+
+Check backend code style with Laravel Pint (inside the container):
+
+```bash
+docker compose exec backend vendor/bin/pint --test   # check only
+docker compose exec backend vendor/bin/pint          # fix files
+```
+
+The frontend has no automated test suite; validate it with a production build:
+
+```bash
+docker compose exec frontend npm run build
 ```
 
 Current test coverage includes:
