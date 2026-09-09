@@ -76,6 +76,7 @@ Run artisan commands (executes inside the backend container):
 - Authenticated requests must send `X-Auth-Method: sanctum|jwt|passport` plus `Authorization: Bearer <token>`.
 - Controllers are thin; keep business logic in models/policies, use Form Requests for validation, and Resources for JSON responses.
 - Auth failures return `401 { "success": false, "message": "Unauthenticated." }`; validation failures return `422` with field errors.
+- Token policy (uniform): access tokens live 60 minutes; refresh window is 7 days — JWT/Sanctum rotate via `POST /api/v1/jwt/refresh` / `POST /api/v1/sanctum/refresh` (public, throttled), Passport via the OAuth2 refresh grant. Lifetimes are env-driven (`SANCTUM_EXPIRATION`, `JWT_TTL`, `JWT_REFRESH_TTL`, `PASSPORT_TOKEN_EXPIRATION_MINUTES`, etc.).
 - API resources: Tasks, Projects, and Comments (nested under tasks).
 - Database is SQLite (`database/database.sqlite`); schema lives in `database/migrations`.
 - Validation messages are localized — Polish strings in `lang/pl/validation.php`.

@@ -32,6 +32,10 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:10,1');
     Route::post('/login/jwt', [AuthController::class, 'loginJwt'])
         ->middleware('throttle:10,1');
+    Route::post('/jwt/refresh', [AuthController::class, 'refreshJwt'])
+        ->middleware('throttle:10,1');
+    Route::post('/sanctum/refresh', [AuthController::class, 'refreshSanctum'])
+        ->middleware('throttle:10,1');
 
     Route::middleware('auth.multi')->group(function () {
 

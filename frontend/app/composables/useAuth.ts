@@ -120,34 +120,70 @@ function useAuth() {
     }
 
     async function performRefresh(): Promise<boolean> {
-        if (!passportClientId.value || !passportClientSecret.value || !refreshToken.value) {
-            return false
-        }
+        const method = authMethod.value
+        const currentToken = getToken()
 
         try {
+            if (method === 'passport') {
+                if (
+                    !passportClientId.value ||
+                    !passportClientSecret.value ||
+                    !refreshToken.value
+                ) {
+                    return false
+                }
+
+                const response = await $fetch<{
+                    access_token: string
+                    refresh_token?: string
+                    client_secret?: string
+                }>('/api/v1/oauth/token', {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Auth-Method': method,
+                    },
+                    body: {
+                        grant_type: 'refresh_token',
+                        client_id: passportClientId.value,
+                        client_secret: passportClientSecret.value,
+                        refresh_token: refreshToken.value,
+                        scope: '',
+                    },
+                })
+
+                setToken(response.access_token)
+                setRefreshToken(response.refresh_token ?? null)
+                setPassportClientSecret(
+                    response.client_secret ?? passportClientSecret.value,
+                )
+
+                return true
+            }
+
+            // JWT and Sanctum both rotate the (expired) access token itself
+            // via a dedicated public refresh endpoint within a sliding window.
+            if (!currentToken) {
+                return false
+            }
+
+            const endpoint =
+                method === 'jwt'
+                    ? '/api/v1/jwt/refresh'
+                    : '/api/v1/sanctum/refresh'
+
             const response = await $fetch<{
-                access_token: string
-                expires_in?: number
-                refresh_token?: string
-                token_type?: string
-            }>('/api/v1/oauth/token', {
+                data: { user?: unknown; token: string }
+            }>(endpoint, {
                 method: 'POST',
                 headers: {
                     Accept: 'application/json',
-                    'X-Auth-Method': authMethod.value,
-                },
-                body: {
-                    grant_type: 'refresh_token',
-                    client_id: passportClientId.value,
-                    client_secret: passportClientSecret.value,
-                    refresh_token: refreshToken.value,
-                    scope: '',
+                    'X-Auth-Method': method,
+                    Authorization: `Bearer ${currentToken}`,
                 },
             })
 
-            setToken(response.access_token)
-            setRefreshToken(response.refresh_token ?? null)
-            setPassportClientSecret(response.client_secret ?? passportClientSecret.value)
+            setToken(response.data.token)
 
             return true
         } catch {
