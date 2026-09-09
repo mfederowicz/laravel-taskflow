@@ -1,0 +1,35 @@
+name: Lint
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**'
+
+jobs:
+  lint:
+    name: PHP Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.5
+          extensions: ctype, iconv, mbstring, intl
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-scripts
+
+      - name: Run linter
+        run: vendor/bin/pint --test

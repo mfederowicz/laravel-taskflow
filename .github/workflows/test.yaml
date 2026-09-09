@@ -1,0 +1,44 @@
+name: Test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'backend/**'
+
+jobs:
+  tests:
+    name: PHP Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.5
+          extensions: ctype, iconv, mbstring, intl, pcov
+          tools: composer:v2
+
+      - name: Install PHP dependencies
+        run: composer install --no-scripts
+
+      - name: Create coverage directory
+        run: mkdir -p var/coverage
+
+      - name: Run tests with coverage
+        run: vendor/bin/phpunit --stderr --colors=never --coverage-clover=var/coverage/clover.xml
+
+      - name: Check code coverage
+        uses: johanvanhelden/gha-clover-test-coverage-check@v1
+        with:
+          percentage: 62
+          filename: var/coverage/clover.xml
