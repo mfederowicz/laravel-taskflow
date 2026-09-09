@@ -96,6 +96,33 @@ class TokenExpirationTest extends TestCase
     }
 
     /**
+     * The Sanctum refresh window slides: a rotated token gets a fresh
+     * created_at, so it can be rotated again after the next expiry.
+     */
+    public function test_sanctum_refresh_window_slides_on_rotation(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $this->travel(61)->minutes();
+
+        $response = $this->withToken($token)
+            ->withHeader('X-Auth-Method', 'sanctum')
+            ->postJson('/api/v1/sanctum/refresh')
+            ->assertOk();
+
+        $secondToken = $response->json('data.token');
+
+        $this->travel(61)->minutes();
+
+        $this->withToken($secondToken)
+            ->withHeader('X-Auth-Method', 'sanctum')
+            ->postJson('/api/v1/sanctum/refresh')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['user', 'token']]);
+    }
+
+    /**
      * An expired JWT can be exchanged for a fresh one within the refresh
      * window; the fresh token authenticates subsequent requests.
      */
@@ -145,6 +172,36 @@ class TokenExpirationTest extends TestCase
             ->withHeader('X-Auth-Method', 'jwt')
             ->postJson('/api/v1/jwt/refresh')
             ->assertUnauthorized();
+    }
+
+    /**
+     * A rotated JWT has a fresh iat, so repeated expiries keep resolving
+     * through the refresh endpoint as long as each refresh happens within
+     * the configured window.
+     */
+    public function test_jwt_token_can_be_refreshed_multiple_times(): void
+    {
+        $user = User::factory()->create();
+        $token = auth('jwt')->login($user);
+
+        $this->travel(61)->minutes();
+        app('auth')->forgetGuards();
+
+        $response = $this->withToken($token)
+            ->withHeader('X-Auth-Method', 'jwt')
+            ->postJson('/api/v1/jwt/refresh')
+            ->assertOk();
+
+        $secondToken = $response->json('data.token');
+
+        $this->travel(61)->minutes();
+        app('auth')->forgetGuards();
+
+        $this->withToken($secondToken)
+            ->withHeader('X-Auth-Method', 'jwt')
+            ->postJson('/api/v1/jwt/refresh')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['user', 'token']]);
     }
 
     /**
