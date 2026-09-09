@@ -38,7 +38,7 @@ jobs:
       - name: Create coverage directory
         run: mkdir -p var/coverage
 
-      - name: Run tests with coverage
+      - name: Run tests with coverage test
         run: vendor/bin/phpunit --stderr --colors=never --coverage-clover=var/coverage/clover.xml
 
       - name: Check code coverage
