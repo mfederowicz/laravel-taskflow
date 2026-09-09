@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateUserPasswordRequest;
 use App\Http\Requests\UpdateUserRoleRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -66,6 +67,19 @@ class UserController extends Controller
         $this->authorize('updateRole', $user);
 
         $user->update(['role' => $request->validated('role')]);
+
+        return response()->json([
+            'data' => new UserResource($user->refresh()),
+        ]);
+    }
+
+    public function resetPassword(
+        UpdateUserPasswordRequest $request,
+        User $user
+    ): JsonResponse {
+        $this->authorize('resetPassword', $user);
+
+        $user->update(['password' => $request->validated('password')]);
 
         return response()->json([
             'data' => new UserResource($user->refresh()),

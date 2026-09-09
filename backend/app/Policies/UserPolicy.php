@@ -53,4 +53,12 @@ class UserPolicy
     {
         return $user->isManager() && $user->id !== $target->id;
     }
+
+    /**
+     * Determine whether the user can reset the model's password.
+     */
+    public function resetPassword(User $user, User $target): bool
+    {
+        return $user->isManager();
+    }
 }

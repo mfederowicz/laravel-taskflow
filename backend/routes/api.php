@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/users/{user}/lock', [UserController::class, 'lock']);
         Route::post('/users/{user}/unlock', [UserController::class, 'unlock']);
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
+        Route::put('/users/{user}/password', [UserController::class, 'resetPassword']);
 
         // Tasks
         Route::get('/tasks', [TaskController::class, 'index']);
