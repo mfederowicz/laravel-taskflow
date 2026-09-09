@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -37,7 +38,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/sanctum/refresh', [AuthController::class, 'refreshSanctum'])
         ->middleware('throttle:10,1');
 
-    Route::middleware('auth.multi')->group(function () {
+    Route::middleware(['auth.multi', 'user.active'])->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', function (Request $request) {
@@ -45,6 +46,12 @@ Route::prefix('v1')->group(function () {
                 'data' => $request->user(),
             ]);
         });
+
+        // Users (manager only)
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users/{user}/lock', [UserController::class, 'lock']);
+        Route::post('/users/{user}/unlock', [UserController::class, 'unlock']);
+        Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
 
         // Tasks
         Route::get('/tasks', [TaskController::class, 'index']);

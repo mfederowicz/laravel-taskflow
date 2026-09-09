@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -42,5 +43,14 @@ class DatabaseSeeder extends Seeder
             'user_id' => $user->id,
             'body' => 'Welcome to the demo project!',
         ]);
+
+        User::updateOrCreate(
+            ['email' => 'manager@example.com'],
+            [
+                'name' => 'Manager User',
+                'password' => Hash::make('password123'),
+                'role' => UserRole::Manager,
+            ]
+        );
     }
 }
