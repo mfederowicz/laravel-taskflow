@@ -254,6 +254,28 @@
                   <span> — {{ comment.body }}</span>
                 </div>
 
+                <div v-if="(commentLastPage[task.id] ?? 1) > 1">
+                  <button
+                      type="button"
+                      :disabled="(commentCurrentPage[task.id] ?? 1) === 1"
+                      @click="previousCommentsPage(task.id)"
+                  >
+                    Previous
+                  </button>
+
+                  <span>
+                    Page {{ commentCurrentPage[task.id] ?? 1 }} of {{ commentLastPage[task.id] ?? 1 }}
+                  </span>
+
+                  <button
+                      type="button"
+                      :disabled="(commentCurrentPage[task.id] ?? 1) >= (commentLastPage[task.id] ?? 1)"
+                      @click="nextCommentsPage(task.id)"
+                  >
+                    Next
+                  </button>
+                </div>
+
                 <form @submit.prevent="createComment(task.id)">
                 <textarea
                     v-model="commentBodies[task.id]"
@@ -349,6 +371,8 @@ const commentBodies = ref<Record<number, string>>({})
 const commentLoading = ref<Record<number, boolean>>({})
 const commentCreating = ref<Record<number, boolean>>({})
 const commentErrors = ref<Record<number, string>>({})
+const commentCurrentPage = ref<Record<number, number>>({})
+const commentLastPage = ref<Record<number, number>>({})
 
 const projects = ref<Project[]>([])
 const projectsLoading = ref(true)
@@ -587,20 +611,46 @@ function cancelEditing() {
 }
 
 async function loadComments(taskId: number) {
+  await loadCommentsPage(taskId, 1)
+}
+
+async function loadCommentsPage(taskId: number, page: number) {
   commentLoading.value[taskId] = true
   commentErrors.value[taskId] = ''
 
   try {
+    const params = new URLSearchParams()
+    params.set('page', String(page))
+
     const response = await apiFetch<CommentsResponse>(
-        `/api/v1/tasks/${taskId}/comments`,
+        `/api/v1/tasks/${taskId}/comments?${params.toString()}`,
     )
 
     comments.value[taskId] = response.data
+    commentCurrentPage.value[taskId] = response.meta?.current_page ?? 1
+    commentLastPage.value[taskId] = response.meta?.last_page ?? 1
   } catch {
     commentErrors.value[taskId] = 'Failed to load comments.'
   } finally {
     commentLoading.value[taskId] = false
   }
+}
+
+async function previousCommentsPage(taskId: number) {
+  const current = commentCurrentPage.value[taskId] ?? 1
+  if (current <= 1) {
+    return
+  }
+  await loadCommentsPage(taskId, current - 1)
+}
+
+async function nextCommentsPage(taskId: number) {
+  const current = commentCurrentPage.value[taskId] ?? 1
+  const last = commentLastPage.value[taskId] ?? 1
+  if (current >= last) {
+    return
+  }
+  await loadCommentsPage(taskId, current + 1)
 }
 async function createComment(taskId: number) {
   const body = commentBodies.value[taskId]?.trim()

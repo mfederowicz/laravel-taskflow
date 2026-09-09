@@ -11,6 +11,10 @@ export interface Comment {
 
 export interface CommentsResponse {
     data: Comment[]
+    meta?: {
+        current_page: number
+        last_page: number
+    }
 }
 
 export interface Task {

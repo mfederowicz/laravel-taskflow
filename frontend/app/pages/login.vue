@@ -87,24 +87,14 @@
 
 
 <script setup lang="ts">
-import useAuth from '@/composables/useAuth'
 import { navigateTo } from '#app'
 
 const email = ref('')
 const password = ref('')
-const authMethod = ref<'sanctum' | 'jwt' | 'passport'>('sanctum')
 const pending = ref(false)
 const error = ref('')
 
-const { setToken, setAuthMethod, getToken } = useAuth()
-
-// Initialize auth method from localStorage on page load
-onMounted(() => {
-  const stored = localStorage.getItem('auth-method')
-  if (stored === 'sanctum' || stored === 'jwt' || stored === 'passport') {
-    authMethod.value = stored
-  }
-})
+const { authMethod, setToken, setAuthMethod, setRefreshToken, setPassportClientId, setPassportClientSecret } = useAuth()
 
 async function login() {
   pending.value = true
@@ -154,12 +144,15 @@ async function login() {
       const clientResponse = await $fetch<{
         client_id: string
         client_secret: string
-      }>('/api/v1/oauth/client')
-      
+      }>('/api/v1/oauth/client', {
+        method: 'POST',
+      })
+
       const tokenResponse = await $fetch<{
         access_token: string
         token_type: string
         expires_in: number
+        refresh_token?: string
       }>('/api/v1/oauth/token', {
         method: 'POST',
         body: {
@@ -171,9 +164,12 @@ async function login() {
           scope: '',
         },
       })
-      
+
       setToken(tokenResponse.access_token)
       setAuthMethod('passport')
+      setRefreshToken(tokenResponse.refresh_token ?? null)
+      setPassportClientId(clientResponse.client_id)
+      setPassportClientSecret(clientResponse.client_secret)
     }
     
     await navigateTo('/tasks')

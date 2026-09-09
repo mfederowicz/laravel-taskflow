@@ -100,20 +100,20 @@ the fixes above (different root causes, overlapping files). Grouped by likely ne
 
 | ID | Area | Issue | Status | First-seen | Notes |
 |----|------|-------|--------|-----------|-------|
-| B9  | FE | Expired tokens strand user: `useApi.ts` has no 401 handling; `middleware/auth.ts` only checks token presence, not validity. JWT TTL is 60 min, so expiry is normal. | OPEN | session 2026-09-08 | Add central 401 handling in `useApi` → clear token + `navigateTo('/login')`. |
-| B10 | BE | `/api/v1/oauth/client` is a GET, unauthenticated, and deletes+recreates the shared Passport client on every call → race between concurrent logins. | OPEN | session 2026-09-08 | Make it POST + throttled; ideally seed a stable client or gate to non-prod. |
-| B11 | BE/FE | Passport refresh tokens unusable: refresh path gated behind `auth:web` (session cookie the API never has); `login.vue` discards `refresh_token`/`expires_in`. | OPEN | session 2026-09-08 | Fix refresh route auth; persist/use refresh token. |
-| B12 | FE | Pagination truncated: projects & comments pages paginate 10/page but render no controls (unlike tasks). | OPEN | session 2026-09-08 | Add pagination UI for projects + task comments. |
+| B9  | FE | Expired tokens strand user: `useApi.ts` has no 401 handling; `middleware/auth.ts` only checks token presence, not validity. JWT TTL is 60 min, so expiry is normal. | FIXED | session 2026-09-08 | Add central 401 handling in `useApi` → clear token + `navigateTo('/login')`. |
+| B10 | BE | `/api/v1/oauth/client` is a GET, unauthenticated, and deletes+recreates the shared Passport client on every call → race between concurrent logins. | FIXED | session 2026-09-08 | Changed to POST + throttle:6,1. |
+| B11 | BE/FE | Passport refresh tokens unusable: refresh path gated behind `auth:web` (session cookie the API never has); `login.vue` discards `refresh_token`/`expires_in`. | FIXED | session 2026-09-08 | Removed `web` middleware from refresh route; fixed `passport.php` path to `api/v1/oauth`; persisted refresh token + client creds and added `refreshAccessToken()` in `useAuth`; 401 auto-refresh in `useApi`. |
+| B12 | FE | Pagination truncated: projects & comments pages paginate 10/page but render no controls (unlike tasks). | FIXED | session 2026-09-08 | Added Prev/Next + page counter to projects page and per-task comments; typed `meta` on `ProjectsResponse`/`CommentsResponse`. |
 
 ### Moderate
 
 | ID | Area | Issue | Status | First-seen | Notes |
 |----|------|-------|--------|-----------|-------|
-| B13 | FE | `useAuth.logout()` clears localStorage `auth-method` but not in-memory `authMethod` ref → stale `X-Auth-Method` header. | OPEN | session 2026-09-08 | Reset `authMethod.value` on logout. |
-| B14 | FE | `login.vue` keeps a local `authMethod` ref + re-reads localStorage in `onMounted`, duplicating `useAuth`/`auth-header` state. `getToken` destructured but unused. | OPEN | session 2026-09-08 | Source of truth only in `useAuth`. |
+| B13 | FE | `useAuth.logout()` clears localStorage `auth-method` but not in-memory `authMethod` ref → stale `X-Auth-Method` header. | FIXED | session 2026-09-08 | Reset `authMethod.value` on logout (added `clearAuth()`). |
+| B14 | FE | `login.vue` keeps a local `authMethod` ref + re-reads localStorage in `onMounted`, duplicating `useAuth`/`auth-header` state. `getToken` destructured but unused. | FIXED | session 2026-09-08 | Removed local `authMethod` ref + `onMounted`; uses shared `useAuth` state. Also removed redundant explicit `import useAuth` (auto-imported per convention). |
 | B15 | FE | `types/task.ts` inaccurate: `project` non-nullable but API returns `null`; `comments: Comment[]` never returned by API; missing `user`/timestamps. | OPEN | session 2026-09-08 | Align types with `TaskResource`. |
 | B16 | BE | `config/sanctum.php` stateful domains: `::1` concatenated with app URL, no comma → garbage `::1http://localhost:8080` entry. | OPEN | session 2026-09-08 | Fix separator. |
-| B17 | BE | `/api/v1/user` returns raw model (no `{ "data" }` envelope / resource), inconsistent with all other endpoints. | OPEN | session 2026-09-08 | Wrap in resource. |
+| B17 | BE | `/api/v1/user` returns raw model (no `{ "data" }` envelope / resource), inconsistent with all other endpoints. | FIXED | session 2026-09-08 | Wrapped in `response()->json(['data' => ...])`. |
 | B18 | BE | `AuthController::register` calls `Hash::make` but `password => 'hashed'` cast already auto-hashes (double responsibility). | OPEN | session 2026-09-08 | Drop the explicit `Hash::make`. |
 
 ### Hygiene / low
@@ -141,3 +141,15 @@ are updated in the tables.
 - 2026-09-08 — Ledger created on branch `fixes` (from `main` `87e8106`). All
   A/P/F/V/D rows marked fixed+merged from PR #1/#2 history; B9–B28 registered OPEN
   from the latest full review of `main`.
+- 2026-09-08 — B9 (401 handling in useApi), B10 (oauth/client POST+throttle),
+  B13 (clearAuth resets authMethod), B17 (/api/v1/user data envelope) marked FIXED
+  on branch `fixes`. Awaiting merge to `main`.
+- 2026-09-09 — B11 (Passport refresh token usability) marked FIXED on branch
+  `fixes` after verification: 47 backend tests pass, Pint green (70 files), frontend
+  `nuxt build` succeeds. Updated `AuthApiTest` (getJson→postJson) for the B10 route change.
+- 2026-09-09 — B12 (pagination UI for projects + task comments) marked FIXED on branch
+  `fixes` after frontend `nuxt build` succeeded. No backend changes needed (index
+  endpoints already paginate 10/page and include `meta`).
+- 2026-09-09 — B14 (login.vue local authMethod duplication) marked FIXED on branch
+  `fixes`. Shared `useAuth` was already the source of truth; removed redundant explicit
+  `import useAuth` (auto-imported per convention). Frontend `nuxt build` succeeded.
