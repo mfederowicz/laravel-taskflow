@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
@@ -252,5 +253,78 @@ class RoleLockTest extends TestCase
             'email' => 'locked-jwt@example.com',
             'password' => 'password123',
         ])->assertUnauthorized();
+    }
+
+    public function test_manager_can_reset_user_password(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $target = User::factory()->create([
+            'email' => 'reset@example.com',
+            'password' => bcrypt('old-password'),
+        ]);
+
+        $this->authenticateWith($manager);
+
+        $this->putJson("/api/v1/users/{$target->id}/password", [
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertOk()
+            ->assertJson(['data' => ['id' => $target->id, 'email' => 'reset@example.com']]);
+
+        $this->assertTrue(Hash::check('new-password-123', $target->fresh()->password));
+        $this->assertFalse(Hash::check('old-password', $target->fresh()->password));
+    }
+
+    public function test_non_manager_cannot_reset_password(): void
+    {
+        $user = User::factory()->create();
+        $target = User::factory()->create();
+
+        $this->authenticateWith($user);
+
+        $this->putJson("/api/v1/users/{$target->id}/password", [
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertForbidden();
+    }
+
+    public function test_password_reset_requires_confirmation(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $target = User::factory()->create();
+
+        $this->authenticateWith($manager);
+
+        $this->putJson("/api/v1/users/{$target->id}/password", [
+            'password' => 'new-password-123',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+    }
+
+    public function test_reset_password_allows_login_with_new_credentials(): void
+    {
+        $manager = User::factory()->manager()->create();
+        $target = User::factory()->create([
+            'email' => 'reset-login@example.com',
+            'password' => bcrypt('old-password'),
+        ]);
+
+        $this->authenticateWith($manager);
+
+        $this->putJson("/api/v1/users/{$target->id}/password", [
+            'password' => 'new-password-123',
+            'password_confirmation' => 'new-password-123',
+        ])->assertOk();
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'reset-login@example.com',
+            'password' => 'old-password',
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/v1/login', [
+            'email' => 'reset-login@example.com',
+            'password' => 'new-password-123',
+        ])->assertOk()
+            ->assertJsonStructure(['data' => ['token']]);
     }
 }

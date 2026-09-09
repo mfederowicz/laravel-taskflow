@@ -30,6 +30,12 @@ function useApi() {
             const status = error?.response?.status
             const is401 = import.meta.client && status === 401
 
+            if (import.meta.client && status === 403 && error?.data?.message === 'Account is locked.') {
+                clearAuth()
+                navigateTo('/login?locked=1')
+                throw error
+            }
+
             if (is401) {
                 const refreshed = await refreshAccessToken()
                 if (refreshed) {

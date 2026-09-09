@@ -46,6 +46,10 @@
         </button>
       </form>
 
+      <p v-if="lockedNotice" class="locked-notice">
+        Your account is locked. Contact a manager to regain access.
+      </p>
+
       <p v-if="error">
         {{ error }}
       </p>
@@ -94,6 +98,16 @@ const email = ref('')
 const password = ref('')
 const pending = ref(false)
 const error = ref('')
+
+const route = useRoute()
+const router = useRouter()
+const lockedNotice = ref(route.query.locked === '1' || route.query.locked === 'true')
+
+onMounted(() => {
+  if (lockedNotice.value) {
+    router.replace({ query: {} })
+  }
+})
 
 const { authMethod, setToken, setAuthMethod, setRefreshToken, setPassportClientId, setPassportClientSecret, setProfile } = useAuth()
 
