@@ -135,6 +135,50 @@ The issue/fix tracker lives **outside the repo** at `~/.config/taskflow/issues.m
 known issues and fixes; update it in place and do not recreate or duplicate it
 inside the repo.
 
+If the file is ever lost, recreate it from the template below. Only this recipe is
+tracked; the live file itself must always live at `~/.config/taskflow/issues.md`.
+
+```markdown
+# TaskFlow — Issues Ledger
+
+Single source of truth for every known issue and fix in this repo.
+
+**How to use it (the ritual — do this in order, every session):**
+1. Read this file first — the baseline; do not rediscover issues from code.
+2. `git log --oneline -25` — see what landed since your last visit.
+3. For anything you are working on, verify against current `main` code, not memory.
+4. Update status, never delete history:
+   - `OPEN` — confirmed present in current `main`.
+   - `FIXED` — fix committed *and merged into main* (state the commit/PR).
+   - `VERIFIED` — a test or manual repro confirms the fix actually holds.
+5. Reference the issue ID in commit messages, e.g. `fix: B9 make oauth/client auth'd (closes #B9)`.
+6. `main` is the only truth; a fix counts as done only once merged into `main`.
+
+## Legend
+- **Area:** BE = backend, FE = frontend, INFRA = docker/nginx/scripts, DOCS.
+- **Status:** OPEN / FIXED / VERIFIED.
+
+## Fixed & merged
+### <Category>
+| ID | Area | Issue | Status | Fix / commit | Notes |
+|----|------|-------|--------|--------------|-------|
+
+## Open
+### Priority
+### Moderate
+### Hygiene / low
+| ID | Area | Issue | Status | First-seen | Notes |
+|----|------|-------|--------|-----------|-------|
+
+## Status change log
+- YYYY-MM-DD — (dated bullets preserving every status transition)
+```
+
+Adding issues: continue the active series (`B29…` for the next bug sweep, or a new
+letter for a new category); append an `OPEN` row to the matching Open table with
+`First-seen`, add a dated Status-change-log bullet, and flip to `FIXED` then
+`VERIFIED` on resolution. Never reuse an ID.
+
 ## Rules
 
 - Do not commit generated/ignored files: `.env`, `backend/storage/oauth-*.key`, `node_modules`, `vendor`, `.nuxt`, `.output`.
