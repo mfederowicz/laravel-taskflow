@@ -128,6 +128,13 @@ docker compose exec frontend npm run build
 - `.ai/db-plan.md` — schema, migrations, relationships, seed data.
 - `.ai/auth-spec.md` — the multi-auth (Sanctum/JWT/Passport) contract and login flows.
 
+## Issues ledger
+
+The issue/fix tracker lives **outside the repo** at `~/.config/taskflow/issues.md`
+(kept out of version control on purpose). It is the single source of truth for
+known issues and fixes; update it in place and do not recreate or duplicate it
+inside the repo.
+
 ## Rules
 
 - Do not commit generated/ignored files: `.env`, `backend/storage/oauth-*.key`, `node_modules`, `vendor`, `.nuxt`, `.output`.
