@@ -13,6 +13,9 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client;
+use Laravel\Sanctum\PersonalAccessToken;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
+use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 #[Group('Authentication')]
@@ -61,6 +64,101 @@ class AuthController extends Controller
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+
+        $token = $user->createToken('api')->plainTextToken;
+
+        return response()->json([
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+        ]);
+    }
+
+    /**
+     * Refresh an expired JWT.
+     *
+     * Accepts an expired-but-within-window bearer token and returns a fresh
+     * token with a new 60-minute TTL. The refresh window (default 7 days,
+     * config `jwt.refresh_ttl`) is enforced by tymon/jwt-auth.
+     */
+    public function refreshJwt(Request $request): JsonResponse
+    {
+        $token = $request->bearerToken();
+
+        if (! $token) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        try {
+            $token = JWTAuth::setToken($token)->refresh();
+        } catch (TokenExpiredException|TokenInvalidException) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        $user = auth('jwt')->setToken($token)->user();
+
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        return response()->json([
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+            ],
+        ]);
+    }
+
+    /**
+     * Refresh an expired Sanctum token.
+     *
+     * Sanctum has no native refresh tokens; this endpoint rotates a still
+     * present but expired personal access token into a fresh one, provided the
+     * original was created within the configured refresh window (default 7
+     * days, config `sanctum.refresh_expiration`). The old token is deleted.
+     */
+    public function refreshSanctum(Request $request): JsonResponse
+    {
+        $plainToken = $request->bearerToken();
+
+        if (! $plainToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        $accessToken = PersonalAccessToken::findToken($plainToken);
+
+        if (! $accessToken) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        $refreshWindow = (int) config('sanctum.refresh_expiration', 7);
+
+        if ($accessToken->created_at->lt(now()->subDays($refreshWindow))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
+        $user = $accessToken->tokenable;
+
+        $accessToken->delete();
 
         $token = $user->createToken('api')->plainTextToken;
 

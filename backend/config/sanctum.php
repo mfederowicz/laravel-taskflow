@@ -47,9 +47,26 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | The check is based on the token's created_at timestamp, so it applies
+    | retroactively to tokens issued before this value was set.
+    |
     */
 
-    'expiration' => null,
+    'expiration' => env('SANCTUM_EXPIRATION', 60),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh Window (days)
+    |--------------------------------------------------------------------------
+    |
+    | Sanctum has no native refresh tokens. The /api/v1/sanctum/refresh
+    | endpoint rotates an expired personal access token into a fresh one as
+    | long as the original token was created within this number of days.
+    | The window slides forward with every successful refresh.
+    |
+    */
+
+    'refresh_expiration' => env('SANCTUM_REFRESH_WINDOW', 7),
 
     /*
     |--------------------------------------------------------------------------

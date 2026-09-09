@@ -30,7 +30,7 @@ function useApi() {
             const status = error?.response?.status
             const is401 = import.meta.client && status === 401
 
-            if (is401 && authMethod.value === 'passport') {
+            if (is401) {
                 const refreshed = await refreshAccessToken()
                 if (refreshed) {
                     const newToken = getToken()

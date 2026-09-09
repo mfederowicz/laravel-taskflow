@@ -32,6 +32,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Passport::enablePasswordGrant();
 
+        Passport::tokensExpireIn(now()->addMinutes((int) env('PASSPORT_TOKEN_EXPIRATION_MINUTES', 60)));
+        Passport::refreshTokensExpireIn(now()->addDays((int) env('PASSPORT_REFRESH_TOKEN_EXPIRATION_DAYS', 7)));
+
         Scramble::configure()
             ->expose(
                 ui: '/api/docs',
