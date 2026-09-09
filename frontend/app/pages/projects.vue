@@ -338,6 +338,11 @@ async function deleteProject(projectId: number) {
     projects.value = projects.value.filter(
         (project: { id: number }) => project.id !== projectId
     )
+
+    if (projects.value.length === 0 && currentPage.value > 1) {
+      currentPage.value--
+      await loadProjects()
+    }
   } catch {
     error.value = 'Failed to delete project.'
   }

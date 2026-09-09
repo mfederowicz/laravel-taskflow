@@ -570,6 +570,19 @@ async function deleteTask(taskId: number) {
     tasks.value = tasks.value.filter(
         (task: { id: number }) => task.id !== taskId
     )
+
+    delete comments.value[taskId]
+    delete commentBodies.value[taskId]
+    delete commentLoading.value[taskId]
+    delete commentCreating.value[taskId]
+    delete commentErrors.value[taskId]
+    delete commentCurrentPage.value[taskId]
+    delete commentLastPage.value[taskId]
+
+    if (tasks.value.length === 0 && currentPage.value > 1) {
+      currentPage.value--
+      await loadTasksWithFilters()
+    }
   } catch {
     error.value = 'Failed to delete task.'
   }

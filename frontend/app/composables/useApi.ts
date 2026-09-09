@@ -36,7 +36,16 @@ function useApi() {
                     const newToken = getToken()
                     if (newToken) {
                         headers.Authorization = `Bearer ${newToken}`
-                        return $fetch<T>(url, { ...options, headers })
+                        try {
+                            return await $fetch<T>(url, { ...options, headers })
+                        } catch (retryError: any) {
+                            const retryStatus = retryError?.response?.status
+                            if (import.meta.client && retryStatus === 401) {
+                                clearAuth()
+                                navigateTo('/login')
+                            }
+                            throw retryError
+                        }
                     }
                 }
             }

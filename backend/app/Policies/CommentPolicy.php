@@ -12,7 +12,8 @@ class CommentPolicy
      */
     public function view(User $user, Comment $comment): bool
     {
-        return $user->id === $comment->user_id;
+        return $user->id === $comment->user_id
+            || $user->id === $comment->task->user_id;
     }
 
     /**
@@ -28,6 +29,7 @@ class CommentPolicy
      */
     public function delete(User $user, Comment $comment): bool
     {
-        return $user->id === $comment->user_id;
+        return $user->id === $comment->user_id
+            || $user->id === $comment->task->user_id;
     }
 }

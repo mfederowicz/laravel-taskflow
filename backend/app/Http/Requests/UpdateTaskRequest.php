@@ -21,10 +21,10 @@ class UpdateTaskRequest extends FormRequest
                     $this->user()->id
                 )],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
+            'description' => ['sometimes', 'nullable', 'string'],
             'status' => ['sometimes', 'required', 'in:pending,in_progress,completed'],
             'priority' => ['sometimes', 'required', 'in:low,medium,high'],
-            'due_date' => ['nullable', 'date'],
+            'due_date' => ['sometimes', 'nullable', 'date'],
         ];
     }
 }

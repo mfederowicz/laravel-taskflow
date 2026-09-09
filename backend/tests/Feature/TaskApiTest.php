@@ -246,4 +246,45 @@ class TaskApiTest extends TestCase
                 'project_id',
             ]);
     }
+
+    public function test_user_cannot_update_another_users_task(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($owner)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->putJson("/api/v1/tasks/{$task->id}", [
+            'status' => 'completed',
+        ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+            'status' => $task->status,
+        ]);
+    }
+
+    public function test_user_cannot_delete_another_users_task(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $task = Task::factory()
+            ->for($owner)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->deleteJson("/api/v1/tasks/{$task->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('tasks', [
+            'id' => $task->id,
+        ]);
+    }
 }
