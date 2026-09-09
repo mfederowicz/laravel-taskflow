@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
 
-    Route::get('/oauth/client', [AuthController::class, 'getPassportClient']);
+    Route::post('/oauth/client', [AuthController::class, 'getPassportClient'])
+        ->middleware('throttle:6,1');
 
     Route::group([
         'as' => 'passport.',
@@ -33,7 +34,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/user', function (Request $request) {
-            return $request->user();
+            return response()->json([
+                'data' => $request->user(),
+            ]);
         });
 
         // Tasks

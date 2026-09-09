@@ -15,11 +15,11 @@ class AuthApiTest extends TestCase
 
     public function test_passport_client_helper_does_not_accumulate_clients(): void
     {
-        $this->getJson('/api/v1/oauth/client')
+        $this->postJson('/api/v1/oauth/client')
             ->assertOk()
             ->assertJsonStructure(['client_id', 'client_secret']);
 
-        $this->getJson('/api/v1/oauth/client')->assertOk();
+        $this->postJson('/api/v1/oauth/client')->assertOk();
 
         $this->assertSame(
             1,
@@ -35,7 +35,7 @@ class AuthApiTest extends TestCase
             'grant_types' => ['password', 'refresh_token'],
         ]);
 
-        $this->getJson('/api/v1/oauth/client')->assertOk();
+        $this->postJson('/api/v1/oauth/client')->assertOk();
 
         $this->assertDatabaseHas('oauth_clients', [
             'id' => $manualClient->id,

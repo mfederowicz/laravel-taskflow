@@ -44,6 +44,6 @@ return [
     */
 
     'connection' => env('PASSPORT_CONNECTION'),
-    'path' => 'api/oauth',
+    'path' => 'api/v1/oauth',
 
 ];

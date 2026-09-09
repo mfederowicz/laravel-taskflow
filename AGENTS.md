@@ -22,7 +22,7 @@ Infrastructure lives at the repo root:
 │   │   ├── Http/Requests/            # Form Request validation
 │   │   ├── Http/Resources/           # JSON resources
 │   │   ├── Models/                   # User, Task, Project, Comment
-│   │   └── Policies/                 # ProjectPolicy, TaskPolicy
+│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy
 │   ├── config/                       # incl. jwt.php, passport.php, sanctum.php
 │   ├── database/migrations/          # SQLite schema
 │   ├── routes/api.php                # all API routes
@@ -127,6 +127,13 @@ docker compose exec frontend npm run build
 - `.ai/tech-stack.md` — stack, versions, and rationale for key decisions.
 - `.ai/db-plan.md` — schema, migrations, relationships, seed data.
 - `.ai/auth-spec.md` — the multi-auth (Sanctum/JWT/Passport) contract and login flows.
+
+## Issues ledger
+
+The issue/fix tracker lives **outside the repo** at `~/.config/taskflow/issues.md`
+(kept out of version control on purpose). It is the single source of truth for
+known issues and fixes; update it in place and do not recreate or duplicate it
+inside the repo.
 
 ## Rules
 

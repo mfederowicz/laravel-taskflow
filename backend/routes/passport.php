@@ -31,7 +31,7 @@ if (Passport::$deviceCodeGrantEnabled) {
 
 $guard = config('passport.guard', null);
 
-Route::middleware(['web', $guard ? 'auth:'.$guard : 'auth'])->group(function () {
+Route::middleware($guard ? 'auth:'.$guard : 'auth')->group(function () {
     Route::post('/token/refresh', [
         'uses' => 'TransientTokenController@refresh',
         'as' => 'token.refresh',

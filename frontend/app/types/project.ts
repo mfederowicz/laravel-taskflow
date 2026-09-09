@@ -6,6 +6,10 @@ export interface Project {
 
 export interface ProjectsResponse {
     data: Project[]
+    meta?: {
+        current_page: number
+        last_page: number
+    }
 }
 
 export interface ProjectResponse {

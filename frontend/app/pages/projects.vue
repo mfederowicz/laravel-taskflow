@@ -125,6 +125,28 @@
         </template>
       </li>
     </ul>
+
+    <div v-if="lastPage > 1">
+      <button
+          type="button"
+          :disabled="currentPage === 1"
+          @click="previousPage"
+      >
+        Previous
+      </button>
+
+      <span>
+    Page {{ currentPage }} of {{ lastPage }}
+  </span>
+
+      <button
+          type="button"
+          :disabled="currentPage === lastPage"
+          @click="nextPage"
+      >
+        Next
+      </button>
+    </div>
   </main>
 </template>
 
@@ -147,6 +169,9 @@ const { apiFetch } = useApi()
 const projects = ref<Project[]>([])
 const pending = ref(true)
 const error = ref('')
+
+const currentPage = ref(1)
+const lastPage = ref(1)
 
 const creating = ref(false)
 const createError = ref('')
@@ -173,17 +198,44 @@ onMounted(async () => {
 })
 
 async function loadProjects() {
+  pending.value = true
+  error.value = ''
+
   try {
+    const params = new URLSearchParams()
+    params.set('page', String(currentPage.value))
+    const query = params.toString()
+
     const response = await apiFetch<ProjectsResponse>(
-        '/api/v1/projects',
+        query ? `/api/v1/projects?${query}` : '/api/v1/projects',
     )
 
     projects.value = response.data
+    currentPage.value = response.meta?.current_page ?? 1
+    lastPage.value = response.meta?.last_page ?? 1
   } catch {
     error.value = 'Failed to load projects.'
   } finally {
     pending.value = false
   }
+}
+
+async function previousPage() {
+  if (currentPage.value <= 1) {
+    return
+  }
+
+  currentPage.value--
+  await loadProjects()
+}
+
+async function nextPage() {
+  if (currentPage.value >= lastPage.value) {
+    return
+  }
+
+  currentPage.value++
+  await loadProjects()
 }
 
 async function createProject() {

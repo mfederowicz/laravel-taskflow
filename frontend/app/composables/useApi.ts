@@ -1,7 +1,10 @@
-function useApi() {
-    const { getToken, authMethod } = useAuth()
+import { navigateTo } from '#app'
+import useAuth from './useAuth'
 
-    function apiFetch<T>(
+function useApi() {
+    const { getToken, authMethod, clearAuth, refreshAccessToken } = useAuth()
+
+    async function apiFetch<T>(
         url: string,
         options: {
             method?: string
@@ -21,7 +24,29 @@ function useApi() {
             headers.Authorization = `Bearer ${token}`
         }
 
-        return $fetch<T>(url, { ...options, headers })
+        try {
+            return await $fetch<T>(url, { ...options, headers })
+        } catch (error: any) {
+            const status = error?.response?.status
+            const is401 = import.meta.client && status === 401
+
+            if (is401 && authMethod.value === 'passport') {
+                const refreshed = await refreshAccessToken()
+                if (refreshed) {
+                    const newToken = getToken()
+                    if (newToken) {
+                        headers.Authorization = `Bearer ${newToken}`
+                        return $fetch<T>(url, { ...options, headers })
+                    }
+                }
+            }
+
+            if (is401) {
+                clearAuth()
+                navigateTo('/login')
+            }
+            throw error
+        }
     }
 
     return { apiFetch }

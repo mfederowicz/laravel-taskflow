@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -23,18 +25,14 @@ class AuthController extends Controller
      *
      * Returns the created user plus a Sanctum personal access token.
      */
-    public function register(Request $request): JsonResponse
+    public function register(RegisterRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'password' => $validated['password'],
         ]);
 
         $token = $user->createToken('api')->plainTextToken;
@@ -52,12 +50,9 @@ class AuthController extends Controller
      *
      * Issues a Sanctum personal access token for the authenticated user.
      */
-    public function login(Request $request): JsonResponse
+    public function login(LoginRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $user = User::where('email', $validated['email'])->first();
 
@@ -113,12 +108,9 @@ class AuthController extends Controller
      *
      * Response shape matches the Sanctum login for a consistent frontend.
      */
-    public function loginJwt(Request $request): JsonResponse
+    public function loginJwt(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+        $credentials = $request->validated();
 
         if (! $token = JWTAuth::attempt($credentials)) {
             return response()->json([
