@@ -114,7 +114,7 @@ the fixes above (different root causes, overlapping files). Grouped by likely ne
 | B15 | FE | `types/task.ts` inaccurate: `project` non-nullable but API returns `null`; `comments: Comment[]` never returned by API; missing `user`/timestamps. | FIXED | session 2026-09-08 | Aligned `Task` type with `TaskResource`: `project` nullable, removed nonexistent `comments`, added `user` + `created_at`/`updated_at`. |
 | B16 | BE | `config/sanctum.php` stateful domains: `::1` concatenated with app URL, no comma → garbage `::1http://localhost:8080` entry. | FIXED | session 2026-09-08 | Verified resolves clean on Sanctum v4.3.3; hardened with `array_filter` (drops empties) so a typo'd/concatenated separator can never produce a garbage entry; removed dead `currentRequestHost()` comment. |
 | B17 | BE | `/api/v1/user` returns raw model (no `{ "data" }` envelope / resource), inconsistent with all other endpoints. | FIXED | session 2026-09-08 | Wrapped in `response()->json(['data' => ...])`. |
-| B18 | BE | `AuthController::register` calls `Hash::make` but `password => 'hashed'` cast already auto-hashes (double responsibility). | OPEN | session 2026-09-08 | Drop the explicit `Hash::make`. |
+| B18 | BE | `AuthController::register` calls `Hash::make` but `password => 'hashed'` cast already auto-hashes (double responsibility). | FIXED | session 2026-09-08 | Dropped explicit `Hash::make`; pass plain password and rely on the `hashed` cast. |
 
 ### Hygiene / low
 
@@ -160,3 +160,5 @@ are updated in the tables.
   the list resolves cleanly (no `::1http://...` garbage) on Sanctum v4.3.3; hardened the
   config with `array_filter` so a bad separator can't reintroduce a garbage entry;
   removed dead `currentRequestHost()` comment. 47 backend tests pass, Pint green.
+- 2026-09-09 — B18 (redundant `Hash::make` in register) marked FIXED on branch `fixes`.
+  Now relies on the `hashed` cast. AuthApiTest passes (register + login), Pint green.
