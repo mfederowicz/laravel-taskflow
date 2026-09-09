@@ -111,7 +111,7 @@ the fixes above (different root causes, overlapping files). Grouped by likely ne
 |----|------|-------|--------|-----------|-------|
 | B13 | FE | `useAuth.logout()` clears localStorage `auth-method` but not in-memory `authMethod` ref → stale `X-Auth-Method` header. | FIXED | session 2026-09-08 | Reset `authMethod.value` on logout (added `clearAuth()`). |
 | B14 | FE | `login.vue` keeps a local `authMethod` ref + re-reads localStorage in `onMounted`, duplicating `useAuth`/`auth-header` state. `getToken` destructured but unused. | FIXED | session 2026-09-08 | Removed local `authMethod` ref + `onMounted`; uses shared `useAuth` state. Also removed redundant explicit `import useAuth` (auto-imported per convention). |
-| B15 | FE | `types/task.ts` inaccurate: `project` non-nullable but API returns `null`; `comments: Comment[]` never returned by API; missing `user`/timestamps. | OPEN | session 2026-09-08 | Align types with `TaskResource`. |
+| B15 | FE | `types/task.ts` inaccurate: `project` non-nullable but API returns `null`; `comments: Comment[]` never returned by API; missing `user`/timestamps. | FIXED | session 2026-09-08 | Aligned `Task` type with `TaskResource`: `project` nullable, removed nonexistent `comments`, added `user` + `created_at`/`updated_at`. |
 | B16 | BE | `config/sanctum.php` stateful domains: `::1` concatenated with app URL, no comma → garbage `::1http://localhost:8080` entry. | OPEN | session 2026-09-08 | Fix separator. |
 | B17 | BE | `/api/v1/user` returns raw model (no `{ "data" }` envelope / resource), inconsistent with all other endpoints. | FIXED | session 2026-09-08 | Wrapped in `response()->json(['data' => ...])`. |
 | B18 | BE | `AuthController::register` calls `Hash::make` but `password => 'hashed'` cast already auto-hashes (double responsibility). | OPEN | session 2026-09-08 | Drop the explicit `Hash::make`. |
@@ -153,3 +153,6 @@ are updated in the tables.
 - 2026-09-09 — B14 (login.vue local authMethod duplication) marked FIXED on branch
   `fixes`. Shared `useAuth` was already the source of truth; removed redundant explicit
   `import useAuth` (auto-imported per convention). Frontend `nuxt build` succeeded.
+- 2026-09-09 — B15 (align types/task.ts with TaskResource) marked FIXED on branch
+  `fixes`. `project` nullable, removed never-returned `comments`, added `user` +
+  timestamps. Frontend `nuxt build` succeeded.

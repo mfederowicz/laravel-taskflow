@@ -24,11 +24,16 @@ export interface Task {
     status: string
     priority: string
     due_date: string | null
-    project: {
+    user: {
         id: number
         name: string
     }
-    comments: Comment[]
+    project: {
+        id: number
+        name: string
+    } | null
+    created_at: string
+    updated_at: string
 }
 
 export interface TasksResponse {
