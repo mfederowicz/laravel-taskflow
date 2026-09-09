@@ -88,13 +88,14 @@
 
 <script setup lang="ts">
 import { navigateTo } from '#app'
+import type { User } from '~/types/user'
 
 const email = ref('')
 const password = ref('')
 const pending = ref(false)
 const error = ref('')
 
-const { authMethod, setToken, setAuthMethod, setRefreshToken, setPassportClientId, setPassportClientSecret } = useAuth()
+const { authMethod, setToken, setAuthMethod, setRefreshToken, setPassportClientId, setPassportClientSecret, setProfile } = useAuth()
 
 async function login() {
   pending.value = true
@@ -105,7 +106,7 @@ async function login() {
       // Sanctum login (current /api/v1/login)
       const response = await $fetch<{
         data: {
-          user: { id: number; name: string; email: string }
+          user: User
           token: string
         }
       }>('/api/v1/login', {
@@ -118,11 +119,12 @@ async function login() {
       
       setToken(response.data.token)
       setAuthMethod('sanctum')
+      setProfile(response.data.user)
     } else if (authMethod.value === 'jwt') {
       // JWT login
       const response = await $fetch<{
         data: {
-          user: { id: number; name: string; email: string }
+          user: User
           token: string
         }
       }>('/api/v1/login/jwt', {
@@ -138,6 +140,7 @@ async function login() {
 
       setToken(response.data.token)
       setAuthMethod('jwt')
+      setProfile(response.data.user)
     } else if (authMethod.value === 'passport') {
       // Passport login via OAuth token endpoint
       // First get client credentials

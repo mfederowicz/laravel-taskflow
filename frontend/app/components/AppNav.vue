@@ -10,6 +10,10 @@
       Projects
     </NuxtLink>
 
+    <NuxtLink v-if="isManager" to="/users">
+      Users
+    </NuxtLink>
+
     <a href="/api/docs" target="_blank" rel="noopener">
       API docs
     </a>
@@ -21,7 +25,15 @@
 </template>
 
 <script setup lang="ts">
-const { logout } = useAuth()
+const { logout, getToken, ensureProfile, profile } = useAuth()
+
+const isManager = computed(() => profile.value?.role === 'manager')
+
+onMounted(async () => {
+  if (getToken()) {
+    await ensureProfile()
+  }
+})
 
 async function handleLogout() {
   await logout()

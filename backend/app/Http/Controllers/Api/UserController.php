@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Enums\UserStatus;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateUserRoleRequest;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Laravel\Passport\Token;
+
+#[Group('Users')]
+class UserController extends Controller
+{
+    /**
+     * List all users (manager only).
+     */
+    public function index(): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', User::class);
+
+        return UserResource::collection(User::latest()->paginate(10));
+    }
+
+    /**
+     * Lock a user's account and revoke their active tokens.
+     */
+    public function lock(User $user): JsonResponse
+    {
+        $this->authorize('lock', $user);
+
+        $user->update(['status' => UserStatus::Locked]);
+
+        $user->tokens()->delete();
+        Token::where('user_id', $user->id)->update(['revoked' => true]);
+
+        return response()->json([
+            'data' => new UserResource($user->refresh()),
+        ]);
+    }
+
+    /**
+     * Unlock a user's account.
+     */
+    public function unlock(User $user): JsonResponse
+    {
+        $this->authorize('unlock', $user);
+
+        $user->update(['status' => UserStatus::Active]);
+
+        return response()->json([
+            'data' => new UserResource($user->refresh()),
+        ]);
+    }
+
+    /**
+     * Change a user's role (user/manager).
+     */
+    public function updateRole(
+        UpdateUserRoleRequest $request,
+        User $user
+    ): JsonResponse {
+        $this->authorize('updateRole', $user);
+
+        $user->update(['role' => $request->validated('role')]);
+
+        return response()->json([
+            'data' => new UserResource($user->refresh()),
+        ]);
+    }
+}

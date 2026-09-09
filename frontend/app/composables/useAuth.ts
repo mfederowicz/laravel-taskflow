@@ -1,3 +1,5 @@
+import type { User } from '~/types/user'
+
 let refreshPromise: Promise<boolean> | null = null
 
 function useAuth() {
@@ -6,6 +8,7 @@ function useAuth() {
     const refreshToken = useState<string | null>('auth-refresh-token', () => null)
     const passportClientId = useState<string | null>('auth-passport-client-id', () => null)
     const passportClientSecret = useState<string | null>('auth-passport-client-secret', () => null)
+    const profile = useState<User | null>('auth-profile', () => null)
 
     function setToken(value: string) {
         token.value = value
@@ -72,6 +75,64 @@ function useAuth() {
         return token.value
     }
 
+    function setProfile(value: User) {
+        profile.value = value
+
+        if (import.meta.client) {
+            localStorage.setItem('profile', JSON.stringify(value))
+        }
+    }
+
+    function getProfile(): User | null {
+        if (!import.meta.client) {
+            return null
+        }
+
+        if (profile.value) {
+            return profile.value
+        }
+
+        const raw = localStorage.getItem('profile')
+
+        if (raw) {
+            profile.value = JSON.parse(raw) as User
+        }
+
+        return profile.value
+    }
+
+    async function ensureProfile(): Promise<User | null> {
+        const local = getProfile()
+
+        if (local) {
+            return local
+        }
+
+        const currentToken = getToken()
+
+        if (!currentToken) {
+            return null
+        }
+
+        try {
+            const response = await $fetch<{ data: User }>('/api/v1/user', {
+                headers: {
+                    Accept: 'application/json',
+                    'X-Auth-Method': authMethod.value,
+                    Authorization: `Bearer ${currentToken}`,
+                },
+            })
+
+            setProfile(response.data)
+
+            return response.data
+        } catch {
+            clearAuth()
+
+            return null
+        }
+    }
+
     async function logout() {
         const currentToken = getToken()
 
@@ -99,6 +160,7 @@ function useAuth() {
         refreshToken.value = null
         passportClientId.value = null
         passportClientSecret.value = null
+        profile.value = null
 
         if (import.meta.client) {
             localStorage.removeItem('token')
@@ -106,6 +168,7 @@ function useAuth() {
             localStorage.removeItem('refresh-token')
             localStorage.removeItem('passport-client-id')
             localStorage.removeItem('passport-client-secret')
+            localStorage.removeItem('profile')
         }
     }
 
@@ -199,12 +262,16 @@ function useAuth() {
         refreshToken,
         passportClientId,
         passportClientSecret,
+        profile,
         setToken,
         setAuthMethod,
         setRefreshToken,
         setPassportClientId,
         setPassportClientSecret,
         getToken,
+        setProfile,
+        getProfile,
+        ensureProfile,
         logout,
         clearAuth,
         refreshAccessToken,

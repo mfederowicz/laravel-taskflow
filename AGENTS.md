@@ -17,12 +17,14 @@ Infrastructure lives at the repo root:
 .
 ├── backend/                          # Laravel API-only application
 │   ├── app/
-│   │   ├── Http/Controllers/Api/     # AuthController, TaskController, ProjectController, CommentController
+│   │   ├── Http/Controllers/Api/     # AuthController, TaskController, ProjectController, CommentController, UserController
 │   │   ├── Http/Middleware/MultiAuth.php  # multi-auth guard (sanctum / jwt / passport)
+│   │   ├── Http/Middleware/EnsureUserIsActive.php  # rejects locked accounts (403) on protected routes
 │   │   ├── Http/Requests/            # Form Request validation
 │   │   ├── Http/Resources/           # JSON resources
+│   │   ├── Enums/                    # UserRole, UserStatus (backed string enums)
 │   │   ├── Models/                   # User, Task, Project, Comment
-│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy
+│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy, UserPolicy
 │   ├── config/                       # incl. jwt.php, passport.php, sanctum.php
 │   ├── database/migrations/          # SQLite schema
 │   ├── routes/api.php                # all API routes

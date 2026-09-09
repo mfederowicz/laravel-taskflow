@@ -65,6 +65,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->isLocked()) {
+            throw ValidationException::withMessages([
+                'email' => ['The provided credentials are incorrect.'],
+            ]);
+        }
+
         $token = $user->createToken('api')->plainTextToken;
 
         return response()->json([
@@ -109,6 +115,13 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Invalid or expired token.',
             ], 401);
+        }
+
+        if ($user->isLocked()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Account is locked.',
+            ], 403);
         }
 
         return response()->json([
@@ -157,6 +170,13 @@ class AuthController extends Controller
         }
 
         $user = $accessToken->tokenable;
+
+        if ($user->isLocked()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Account is locked.',
+            ], 403);
+        }
 
         $accessToken->delete();
 
@@ -211,6 +231,17 @@ class AuthController extends Controller
         $credentials = $request->validated();
 
         if (! $token = JWTAuth::attempt($credentials)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+            ], 401);
+        }
+
+        $user = JWTAuth::user();
+
+        if ($user?->isLocked()) {
+            JWTAuth::setToken($token)->invalidate();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid credentials.',
