@@ -22,7 +22,7 @@ Infrastructure lives at the repo root:
 │   │   ├── Http/Requests/            # Form Request validation
 │   │   ├── Http/Resources/           # JSON resources
 │   │   ├── Models/                   # User, Task, Project, Comment
-│   │   └── Policies/                 # ProjectPolicy, TaskPolicy
+│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy
 │   ├── config/                       # incl. jwt.php, passport.php, sanctum.php
 │   ├── database/migrations/          # SQLite schema
 │   ├── routes/api.php                # all API routes
