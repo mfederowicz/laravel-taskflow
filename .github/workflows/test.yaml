@@ -38,11 +38,11 @@ jobs:
       - name: Create coverage directory
         run: mkdir -p var/coverage
 
-      - name: Run tests with coverage test
-        run: vendor/bin/phpunit --stderr --colors=never --coverage-clover=var/coverage/clover.xml
+      - name: Run tests with coverage
+        run: vendor/bin/phpunit --stderr --colors=never --coverage-clover=${{ github.workspace }}/backend/var/coverage/clover.xml
 
       - name: Check code coverage
         uses: johanvanhelden/gha-clover-test-coverage-check@v1
         with:
           percentage: 62
-          filename: var/coverage/clover.xml
+          filename: backend/var/coverage/clover.xml
