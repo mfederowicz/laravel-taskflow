@@ -888,6 +888,15 @@ The frontend has no automated test suite; validate it with a production build:
 docker compose exec frontend npm run build
 ```
 
+## CI
+
+GitHub Actions runs two workflows on pushes and pull requests that touch `backend/**`:
+
+* **Lint** — runs Laravel Pint in check mode (`pint --test`)
+* **Test** — runs PHPUnit with pcov coverage and enforces a minimum 62% coverage threshold
+
+Both workflows use PHP 8.5 and run on `ubuntu-latest`.
+
 Current test coverage includes:
 
 ### Tasks
@@ -945,6 +954,10 @@ Relevant repository structure:
 
 ```text
 .
+├── .github/
+│   └── workflows/
+│       ├── lint.yaml                     # GitHub Actions — Laravel Pint
+│       └── test.yaml                     # GitHub Actions — PHPUnit + coverage
 ├── backend/                        # Laravel API
 │   ├── app/
 │   │   ├── Http/
@@ -1057,7 +1070,6 @@ Possible next improvements include:
 * Improved production deployment configuration
 * Better confirmation flows for destructive actions
 * More reusable frontend components
-* CI/CD integration
 
 These are intentionally outside the scope of the current project.
 
