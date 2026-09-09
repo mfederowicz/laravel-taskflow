@@ -36,6 +36,7 @@ class MultiAuth
         }
 
         auth()->shouldUse($method);
+        $request->setUserResolver(fn () => $guard->user());
 
         return $next($request);
     }

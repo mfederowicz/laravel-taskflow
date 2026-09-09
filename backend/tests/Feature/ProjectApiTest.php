@@ -139,4 +139,45 @@ class ProjectApiTest extends TestCase
                 'name',
             ]);
     }
+
+    public function test_user_cannot_update_another_users_project(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $project = Project::factory()
+            ->for($owner)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->putJson("/api/v1/projects/{$project->id}", [
+            'name' => 'Hijacked',
+        ])
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'name' => $project->name,
+        ]);
+    }
+
+    public function test_user_cannot_delete_another_users_project(): void
+    {
+        $owner = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $project = Project::factory()
+            ->for($owner)
+            ->create();
+
+        Sanctum::actingAs($otherUser);
+
+        $this->deleteJson("/api/v1/projects/{$project->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+        ]);
+    }
 }

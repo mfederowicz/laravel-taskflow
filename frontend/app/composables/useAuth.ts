@@ -1,3 +1,5 @@
+let refreshPromise: Promise<boolean> | null = null
+
 function useAuth() {
     const token = useState<string | null>('auth-token', () => null)
     const authMethod = useState<'sanctum' | 'jwt' | 'passport'>('auth-method', () => 'sanctum')
@@ -47,6 +49,8 @@ function useAuth() {
         passportClientSecret.value = secret
 
         if (import.meta.client && secret) {
+            // Accepted trade-off (B40): persisted so the Passport auto-refresh
+            // keeps working across page reloads. XSS on this demo app can read it.
             localStorage.setItem('passport-client-secret', secret)
         } else if (import.meta.client) {
             localStorage.removeItem('passport-client-secret')
@@ -105,7 +109,17 @@ function useAuth() {
         }
     }
 
-    async function refreshAccessToken(): Promise<boolean> {
+    function refreshAccessToken(): Promise<boolean> {
+        if (!refreshPromise) {
+            refreshPromise = performRefresh().finally(() => {
+                refreshPromise = null
+            })
+        }
+
+        return refreshPromise
+    }
+
+    async function performRefresh(): Promise<boolean> {
         if (!passportClientId.value || !passportClientSecret.value || !refreshToken.value) {
             return false
         }
@@ -134,11 +148,6 @@ function useAuth() {
             setToken(response.access_token)
             setRefreshToken(response.refresh_token ?? null)
             setPassportClientSecret(response.client_secret ?? passportClientSecret.value)
-
-            if (response.expires_in) {
-                // We could compute expiry time, but for simplicity we just store the new token.
-                // The TTL is 60 minutes by default in JWT config.
-            }
 
             return true
         } catch {

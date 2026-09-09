@@ -43,7 +43,7 @@ class CommentController extends Controller
 
         $comment = $task->comments()->create([
             'user_id' => $request->user()->id,
-            'body' => $request->validated()['body'],
+            ...$request->validated(),
         ]);
 
         return response()->json([

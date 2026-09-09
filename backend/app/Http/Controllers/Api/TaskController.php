@@ -45,6 +45,8 @@ class TaskController extends Controller
      */
     public function store(StoreTaskRequest $request): JsonResponse
     {
+        $this->authorize('create', Task::class);
+
         $validated = $request->validated();
 
         $project = $request->user()
