@@ -277,28 +277,34 @@ class AuthController extends Controller
     }
 
     /**
-     * Create a Passport OAuth2 client.
+     * Get the shared Passport OAuth2 client.
      *
-     * Dev convenience endpoint used with POST /oauth/token. Passport hashes
-     * client secrets, so a fresh client is created per request; only clients
-     * tagged by this endpoint are pruned, so manually created password-grant
-     * clients (e.g. via passport:client) are preserved.
+     * Dev convenience endpoint used with POST /oauth/token. A single stable
+     * password-grant client is reused by every frontend tab/session; it is
+     * created on first request and never deleted or recreated (Passport hashes
+     * client secrets, so the plaintext secret is kept in config). Deleting and
+     * recreating it on each call would orphan the credentials — and therefore
+     * the refresh tokens — of any other open tab (B50).
      */
     public function getPassportClient(): JsonResponse
     {
-        Client::where('provider', 'users')
+        $client = Client::where('provider', 'users')
             ->where('name', self::PASSPORT_CLIENT_NAME)
-            ->delete();
+            ->first();
 
-        $client = Client::factory()->create([
-            'name' => self::PASSPORT_CLIENT_NAME,
-            'provider' => 'users',
-            'grant_types' => ['password', 'refresh_token'],
-        ]);
+        if ($client === null) {
+            $client = Client::factory()->create([
+                'name' => self::PASSPORT_CLIENT_NAME,
+                'provider' => 'users',
+                'grant_types' => ['password', 'refresh_token'],
+                'redirect_uris' => [],
+                'secret' => config('passport.auto_client_secret'),
+            ]);
+        }
 
         return response()->json([
             'client_id' => $client->id,
-            'client_secret' => $client->plainSecret,
+            'client_secret' => config('passport.auto_client_secret'),
         ]);
     }
 }

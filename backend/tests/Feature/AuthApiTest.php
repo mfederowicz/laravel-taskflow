@@ -43,6 +43,69 @@ class AuthApiTest extends TestCase
         ]);
     }
 
+    public function test_passport_client_helper_returns_stable_credentials(): void
+    {
+        $first = $this->postJson('/api/v1/oauth/client')
+            ->assertOk()
+            ->json();
+
+        $second = $this->postJson('/api/v1/oauth/client')
+            ->assertOk()
+            ->json();
+
+        $this->assertSame($first['client_id'], $second['client_id']);
+        $this->assertSame($first['client_secret'], $second['client_secret']);
+        $this->assertSame(config('passport.auto_client_secret'), $second['client_secret']);
+
+        $this->assertSame(
+            1,
+            Client::where('name', AuthController::PASSPORT_CLIENT_NAME)->count()
+        );
+    }
+
+    public function test_passport_refresh_keeps_working_after_another_tab_fetches_client(): void
+    {
+        User::factory()->create([
+            'email' => 'tab-user@example.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        // First tab logs in via the password grant using the shared client.
+        $creds = $this->postJson('/api/v1/oauth/client')
+            ->assertOk()
+            ->json();
+
+        $tokenResponse = $this->postJson('/api/v1/oauth/token', [
+            'grant_type' => 'password',
+            'client_id' => $creds['client_id'],
+            'client_secret' => $creds['client_secret'],
+            'username' => 'tab-user@example.com',
+            'password' => 'password123',
+            'scope' => '',
+        ])->assertOk()
+            ->assertJsonStructure(['access_token', 'refresh_token'])
+            ->json();
+
+        // A second tab re-fetches the client — credentials must be unchanged,
+        // otherwise the first tab's stored refresh token would be orphaned.
+        $refetched = $this->postJson('/api/v1/oauth/client')
+            ->assertOk()
+            ->json();
+
+        $this->assertSame($creds['client_id'], $refetched['client_id']);
+        $this->assertSame($creds['client_secret'], $refetched['client_secret']);
+
+        // The first tab still refreshes with its stored credentials.
+        $this->postJson('/api/v1/oauth/token', [
+            'grant_type' => 'refresh_token',
+            'client_id' => $creds['client_id'],
+            'client_secret' => $creds['client_secret'],
+            'refresh_token' => $tokenResponse['refresh_token'],
+            'scope' => '',
+        ])->assertOk()
+            ->assertJsonStructure(['access_token', 'refresh_token']);
+    }
+
     public function test_user_can_register_and_receives_sanctum_token(): void
     {
         $response = $this->postJson('/api/v1/register', [

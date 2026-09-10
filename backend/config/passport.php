@@ -46,4 +46,19 @@ return [
     'connection' => env('PASSPORT_CONNECTION'),
     'path' => 'api/v1/oauth',
 
+    /*
+    |--------------------------------------------------------------------------
+    | Auto Password-Grant Client Secret
+    |--------------------------------------------------------------------------
+    |
+    | The secret shared by the single password-grant client that the SPA uses
+    | (GET /api/v1/oauth/client). Passport stores client secrets hashed, so the
+    | plaintext secret must live in config to be returned again on later calls.
+    | The client is created once and reused across every tab/session — recreating
+    | it would invalidate refresh tokens held by other tabs (B50).
+    |
+    */
+
+    'auto_client_secret' => env('PASSPORT_AUTO_CLIENT_SECRET', 'local-dev-auto-client-secret'),
+
 ];
