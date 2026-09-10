@@ -66,6 +66,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/tasks/{task}', [TaskController::class, 'show']);
         Route::put('/tasks/{task}', [TaskController::class, 'update']);
         Route::delete('/tasks/{task}', [TaskController::class, 'destroy']);
+        Route::post('/tasks/{task}/transfer', [TaskController::class, 'transfer']);
 
         // Projects
         Route::get('/projects', [ProjectController::class, 'index']);

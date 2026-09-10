@@ -17,6 +17,18 @@ export interface CommentsResponse {
     }
 }
 
+export interface TaskOwnershipHistoryEntry {
+    id: number
+    performed_by: number
+    performed_by_name: string
+    from_user_id: number | null
+    from_user_name: string | null
+    to_user_id: number
+    to_user_name: string
+    note: string | null
+    created_at: string
+}
+
 export interface Task {
     id: number
     title: string
@@ -32,6 +44,7 @@ export interface Task {
         id: number
         name: string
     } | null
+    ownership_history?: TaskOwnershipHistoryEntry[]
     created_at: string
     updated_at: string
 }
