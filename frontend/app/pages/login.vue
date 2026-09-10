@@ -191,7 +191,10 @@ async function login() {
     
     await navigateTo('/tasks')
   } catch (err: any) {
-    error.value = err?.data?.message ?? 'Invalid email or password.'
+    error.value =
+        err?.data?.error_description ??
+        err?.data?.message ??
+        'Invalid email or password.'
   } finally {
     pending.value = false
   }
