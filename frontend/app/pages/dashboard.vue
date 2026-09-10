@@ -157,8 +157,8 @@ onMounted(async () => {
     const [allTasks, projects] = await Promise.all([fetchAllTasks(), fetchProjectCount()])
     tasks.value = allTasks
     projectCount.value = projects
-  } catch {
-    error.value = 'Failed to load the dashboard.'
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to load the dashboard.'
   } finally {
     loading.value = false
   }

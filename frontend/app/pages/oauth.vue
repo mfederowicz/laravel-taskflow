@@ -112,8 +112,8 @@ async function loadClients() {
   try {
     const response = await apiFetch<OAuthClientsResponse>('/api/v1/oauth/clients')
     clients.value = response.data
-  } catch {
-    error.value = 'Failed to load OAuth clients.'
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to load OAuth clients.'
   } finally {
     pending.value = false
   }

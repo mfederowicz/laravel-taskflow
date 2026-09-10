@@ -165,7 +165,7 @@
     <p v-if="pending" class="text-sm text-gray-500">Loading tasks...</p>
 
     <p v-else-if="error" class="text-sm text-red-600">
-      Failed to load tasks.
+      {{ error }}
     </p>
 
     <ul v-else class="space-y-4">
@@ -566,8 +566,8 @@ async function loadTasksWithFilters() {
     tasks.value = response.data
     currentPage.value = response.meta.current_page
     lastPage.value = response.meta.last_page
-  } catch {
-    error.value = 'Failed to load tasks.'
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to load tasks.'
   } finally {
     pending.value = false
   }
@@ -798,8 +798,8 @@ async function loadCommentsPage(taskId: number, page: number) {
     comments.value[taskId] = response.data
     commentCurrentPage.value[taskId] = response.meta?.current_page ?? 1
     commentLastPage.value[taskId] = response.meta?.last_page ?? 1
-  } catch {
-    commentErrors.value[taskId] = 'Failed to load comments.'
+  } catch (err: any) {
+    commentErrors.value[taskId] = err?.data?.message ?? 'Failed to load comments.'
   } finally {
     commentLoading.value[taskId] = false
   }

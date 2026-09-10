@@ -174,8 +174,8 @@ async function loadUsers() {
     users.value = response.data
     currentPage.value = response.meta.current_page
     lastPage.value = response.meta.last_page
-  } catch {
-    error.value = 'Failed to load users.'
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to load users.'
   } finally {
     pending.value = false
   }

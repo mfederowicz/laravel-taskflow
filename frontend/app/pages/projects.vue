@@ -46,7 +46,7 @@
     </p>
 
     <p v-else-if="error" class="text-sm text-red-600">
-      Failed to load projects.
+      {{ error }}
     </p>
 
     <ul v-else class="space-y-4">
@@ -224,8 +224,8 @@ async function loadProjects() {
     projects.value = response.data
     currentPage.value = response.meta?.current_page ?? 1
     lastPage.value = response.meta?.last_page ?? 1
-  } catch {
-    error.value = 'Failed to load projects.'
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to load projects.'
   } finally {
     pending.value = false
   }

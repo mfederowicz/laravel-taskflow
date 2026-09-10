@@ -27,6 +27,14 @@ function useApi() {
         try {
             return await $fetch<T>(url, { ...options, headers })
         } catch (error: any) {
+            // No HTTP response — network-level failure (offline, DNS, CORS,
+            // timeout). Normalize so callers can surface the real cause.
+            if (import.meta.client && !error?.response) {
+                error.network = true
+                error.data = { message: 'Unable to reach the server. Please check your connection.' }
+                throw error
+            }
+
             const status = error?.response?.status
             const is401 = import.meta.client && status === 401
 
