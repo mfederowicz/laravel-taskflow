@@ -126,7 +126,16 @@ function useAuth() {
             setProfile(response.data)
 
             return response.data
-        } catch {
+        } catch (error: any) {
+            const status = error?.response?.status
+
+            // Transient server or network failure — keep the session; fall back
+            // to whatever profile is cached instead of logging the user out.
+            if (!status || status >= 500) {
+                return getProfile()
+            }
+
+            // A genuine auth failure (401/403) — the token is unusable.
             clearAuth()
 
             return null
