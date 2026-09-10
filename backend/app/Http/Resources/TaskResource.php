@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\TaskOwnershipHistory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,21 @@ class TaskResource extends JsonResource
                     'name' => $this->project->name,
                 ]
                 : null,
+            'ownership_history' => $this->whenLoaded('ownershipHistories', function () {
+                return $this->ownershipHistories->map(
+                    fn (TaskOwnershipHistory $entry) => [
+                        'id' => $entry->id,
+                        'performed_by' => $entry->performedBy?->id,
+                        'performed_by_name' => $entry->performedBy?->name,
+                        'from_user_id' => $entry->from_user_id,
+                        'from_user_name' => $entry->fromUser?->name,
+                        'to_user_id' => $entry->to_user_id,
+                        'to_user_name' => $entry->toUser?->name,
+                        'note' => $entry->note,
+                        'created_at' => $entry->created_at,
+                    ]
+                );
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

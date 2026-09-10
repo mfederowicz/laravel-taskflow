@@ -58,11 +58,11 @@ Authenticated requests must send `X-Auth-Method: sanctum|jwt|passport` plus `Aut
 
 ### Resources (all auth-protected)
 
-- Tasks: `GET/POST /api/v1/tasks`, `GET/PUT/DELETE /api/v1/tasks/{task}`
+- Tasks: `GET/POST /api/v1/tasks`, `GET/PUT/DELETE /api/v1/tasks/{task}`, `POST /api/v1/tasks/{task}/transfer`, `GET /api/v1/tasks/{task}?with=history`
 - Projects: `GET/POST /api/v1/projects`, `GET/PUT/DELETE /api/v1/projects/{project}`
 - Comments: `GET/POST /api/v1/tasks/{task}/comments`
 
-Authorization is enforced via `app/Policies` (`ProjectPolicy`, `TaskPolicy` — owners only). Validation lives in `app/Http/Requests`; responses use `app/Http/Resources`.
+Authorization is enforced via `app/Policies` (`ProjectPolicy`, `TaskPolicy` — owners only, managers may view/transfer any task). Validation lives in `app/Http/Requests`; responses use `app/Http/Resources`. Task transfers (manager → regular user, managers can never inherit) are recorded in `task_ownership_histories` and exposed via `?with=history`.
 
 ## Project layout
 

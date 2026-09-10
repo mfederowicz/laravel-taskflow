@@ -14,7 +14,19 @@ class TaskPolicy
 
     public function view(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id || $user->isManager();
+    }
+
+    /**
+     * Determine whether the user can transfer the task to another owner.
+     *
+     * Only managers may transfer a task; managers can never inherit one, so
+     * the manager-to-regular-user direction is the only legal move and the
+     * validate-transfer rule lives in TransferTaskRequest.
+     */
+    public function transfer(User $user, Task $task): bool
+    {
+        return $user->isManager();
     }
 
     /**
