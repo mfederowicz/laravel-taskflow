@@ -29,6 +29,12 @@ class MultiAuth
         $guard = auth()->guard($method);
 
         if (! $guard->check()) {
+            Log::warning('Authentication failed', [
+                'auth_method' => $method,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated.',
