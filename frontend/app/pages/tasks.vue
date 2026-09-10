@@ -618,7 +618,9 @@ const filters = reactive({
 
 const allUsers = ref<User[]>([])
 const transferUsers = computed(() =>
-    allUsers.value.filter((user) => user.role === 'user')
+    allUsers.value.filter(
+        (user) => user.role === 'user' && user.status === 'active'
+    )
 )
 const usersError = ref('')
 
