@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Laravel\Passport\Client;
 use Laravel\Passport\Token;
 use Tests\TestCase;
@@ -88,6 +89,24 @@ class MultiAuthTest extends TestCase
                 'success' => false,
                 'message' => 'Unauthenticated.',
             ]);
+    }
+
+    public function test_failed_authentication_is_logged(): void
+    {
+        Log::spy();
+
+        $this->withToken('invalid-token')
+            ->withHeader('X-Auth-Method', 'jwt')
+            ->getJson('/api/v1/tasks')
+            ->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Unauthenticated.',
+            ]);
+
+        Log::shouldHaveReceived('warning')
+            ->withArgs(fn (string $message, array $context) => $message === 'Authentication failed'
+                && $context['auth_method'] === 'jwt');
     }
 
     public function test_logout_deletes_sanctum_token(): void

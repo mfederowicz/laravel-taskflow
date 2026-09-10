@@ -173,6 +173,13 @@ class AuthController extends Controller
 
         $user = $accessToken->tokenable;
 
+        if (! $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
         if ($user->isLocked()) {
             return response()->json([
                 'success' => false,

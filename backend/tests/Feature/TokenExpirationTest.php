@@ -250,6 +250,27 @@ class TokenExpirationTest extends TestCase
     }
 
     /**
+     * A Sanctum token whose owning user has been hard-deleted cannot be
+     * refreshed — returns 401 instead of 500 (token rows are morphs with no FK).
+     */
+    public function test_sanctum_refresh_handles_deleted_user(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('test')->plainTextToken;
+
+        $user->delete();
+
+        $this->withToken($token)
+            ->withHeader('X-Auth-Method', 'sanctum')
+            ->postJson('/api/v1/sanctum/refresh')
+            ->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ]);
+    }
+
+    /**
      * A blacklisted JWT cannot be refreshed — returns 401 instead of 500.
      */
     public function test_jwt_refresh_rejects_blacklisted_token(): void
