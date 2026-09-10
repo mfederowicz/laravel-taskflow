@@ -317,3 +317,12 @@ hr {
     background: #dbeafe;
     color: #1d4ed8;
 }
+
+.secret-box {
+    margin: 16px auto;
+    padding: 12px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 6px;
+    text-align: center;
+}
