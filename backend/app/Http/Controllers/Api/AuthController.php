@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Passport\Client;
 use Laravel\Sanctum\PersonalAccessToken;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Exceptions\TokenBlacklistedException;
 use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 use Tymon\JWTAuth\Exceptions\TokenInvalidException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -101,7 +103,7 @@ class AuthController extends Controller
 
         try {
             $token = JWTAuth::setToken($token)->refresh();
-        } catch (TokenExpiredException|TokenInvalidException) {
+        } catch (TokenExpiredException|TokenInvalidException|TokenBlacklistedException|JWTException) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid or expired token.',
@@ -204,7 +206,11 @@ class AuthController extends Controller
 
         switch ($method) {
             case 'jwt':
-                auth('jwt')->logout();
+                try {
+                    auth('jwt')->logout();
+                } catch (\Exception) {
+                    // Token already blacklisted or invalid — treat as logged out.
+                }
                 break;
 
             case 'passport':
@@ -230,7 +236,14 @@ class AuthController extends Controller
     {
         $credentials = $request->validated();
 
-        if (! $token = JWTAuth::attempt($credentials)) {
+        try {
+            if (! $token = JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid credentials.',
+                ], 401);
+            }
+        } catch (JWTException) {
             return response()->json([
                 'success' => false,
                 'message' => 'Invalid credentials.',
