@@ -185,6 +185,8 @@ letter for a new category); append an `OPEN` row to the matching Open table with
 ## Rules
 
 - Create feature branches with the `{task-id}-{branch-slug}` format, e.g. `B41-token-expiration` or `R9-task-search`; the slug is a short kebab-case summary of the work.
+- Create the feature branch before starting any work; use a separate branch per task/issue when multiple are done in one session.
+- Do not push branches — the user handles pushing and PR creation.
 - Reference the task/issue ID in commit messages (`fix: ... (closes #B41)`, `feat: ... (#R9)`), matching the ledger convention.
 - Do not commit generated/ignored files: `.env`, `backend/storage/oauth-*.key`, `node_modules`, `vendor`, `.nuxt`, `.output`.
 - Keep `.env.example` in sync when adding environment variables.
