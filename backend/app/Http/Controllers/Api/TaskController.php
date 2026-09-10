@@ -19,7 +19,9 @@ class TaskController extends Controller
     /**
      * List the authenticated user's tasks.
      *
-     * Filterable by status and priority; paginated 10 per page.
+     * Filterable by status, priority, a free-text search over the title and
+     * description, and an inclusive due date range (due_from / due_to);
+     * paginated 10 per page.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -33,6 +35,21 @@ class TaskController extends Controller
             ->when(
                 $request->priority,
                 fn ($query, $priority) => $query->where('priority', $priority)
+            )
+            ->when(
+                trim((string) $request->string('search')),
+                fn ($query, $search) => $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                })
+            )
+            ->when(
+                $request->due_from,
+                fn ($query, $dueFrom) => $query->whereDate('due_date', '>=', $dueFrom)
+            )
+            ->when(
+                $request->due_to,
+                fn ($query, $dueTo) => $query->whereDate('due_date', '<=', $dueTo)
             )
             ->latest()
             ->paginate(10);
