@@ -295,3 +295,25 @@ hr {
 .home-actions a:hover {
     background: #1d4ed8;
 }
+.badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 12px;
+    border-radius: 999px;
+}
+
+.badge-overdue {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.badge-due-today {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+.badge-due-soon {
+    background: #dbeafe;
+    color: #1d4ed8;
+}

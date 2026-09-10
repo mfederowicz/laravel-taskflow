@@ -253,6 +253,13 @@
               <span v-if="task.project">
                 — {{ task.project.name }}
               </span>
+              <span
+                  v-if="dueBadge(task)"
+                  class="badge"
+                  :class="`badge-${dueBadge(task).type}`"
+              >
+                {{ dueBadge(task).label }}
+              </span>
             </div>
             <p v-if="task.description">
               {{ task.description }}
@@ -515,6 +522,47 @@ async function loadTasksWithFilters() {
 async function applyFilters() {
   currentPage.value = 1
   await loadTasksWithFilters()
+}
+
+const DUE_SOON_DAYS = 3
+
+function todayISO(): string {
+  const now = new Date()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+
+  return `${now.getFullYear()}-${month}-${day}`
+}
+
+function addDaysToISO(iso: string, days: number): string {
+  const date = new Date(`${iso}T00:00:00`)
+  date.setDate(date.getDate() + days)
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${date.getFullYear()}-${month}-${day}`
+}
+
+function dueBadge(task: Task): { label: string; type: string } | null {
+  if (!task.due_date || task.status === 'completed') {
+    return null
+  }
+
+  const today = todayISO()
+
+  if (task.due_date < today) {
+    return { label: 'Overdue', type: 'overdue' }
+  }
+
+  if (task.due_date === today) {
+    return { label: 'Due today', type: 'due-today' }
+  }
+
+  if (task.due_date <= addDaysToISO(today, DUE_SOON_DAYS)) {
+    return { label: 'Due soon', type: 'due-soon' }
+  }
+
+  return null
 }
 
 async function createTask() {
