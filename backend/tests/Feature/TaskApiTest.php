@@ -287,4 +287,111 @@ class TaskApiTest extends TestCase
             'id' => $task->id,
         ]);
     }
+
+    public function test_user_can_search_tasks_by_title(): void
+    {
+        $user = User::factory()->create();
+
+        Task::factory()->for($user)->create(['title' => 'Deploy the dashboard']);
+        Task::factory()->for($user)->create(['title' => 'Buy groceries']);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/tasks?search=dashboard')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['title' => 'Deploy the dashboard']);
+    }
+
+    public function test_user_can_search_tasks_by_description(): void
+    {
+        $user = User::factory()->create();
+
+        Task::factory()->for($user)->create([
+            'title' => 'Misc task',
+            'description' => 'Contains the keyword magnet',
+        ]);
+        Task::factory()->for($user)->create([
+            'title' => 'Other task',
+            'description' => 'No match here',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/tasks?search=magnet')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['title' => 'Misc task']);
+    }
+
+    public function test_search_only_returns_own_tasks(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        Task::factory()->for($otherUser)->create(['title' => 'Private weapon project']);
+        Task::factory()->for($user)->create(['title' => 'Public weapon briefing']);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/tasks?search=weapon')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['title' => 'Public weapon briefing']);
+    }
+
+    public function test_user_can_filter_tasks_by_due_date_range(): void
+    {
+        $user = User::factory()->create();
+
+        $within = Task::factory()->for($user)->create([
+            'title' => 'Inside range',
+            'due_date' => '2026-06-15',
+        ]);
+        Task::factory()->for($user)->create([
+            'title' => 'Before range',
+            'due_date' => '2026-06-01',
+        ]);
+        Task::factory()->for($user)->create([
+            'title' => 'After range',
+            'due_date' => '2026-07-01',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/v1/tasks?due_from=2026-06-10&due_to=2026-06-20')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['title' => 'Inside range']);
+    }
+
+    public function test_task_filters_combine_search_due_date_and_status(): void
+    {
+        $user = User::factory()->create();
+
+        Task::factory()->for($user)->create([
+            'title' => 'Launch Spring campaign',
+            'status' => 'in_progress',
+            'due_date' => '2026-09-15',
+        ]);
+        Task::factory()->for($user)->create([
+            'title' => 'Spring cleanup',
+            'status' => 'pending',
+            'due_date' => '2026-09-15',
+        ]);
+        Task::factory()->for($user)->create([
+            'title' => 'Launch Summer campaign',
+            'status' => 'completed',
+            'due_date' => '2026-09-15',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson(
+            '/api/v1/tasks?search=campaign&due_from=2026-09-01&due_to=2026-09-30&status=in_progress'
+        )
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonFragment(['title' => 'Launch Spring campaign']);
+    }
 }

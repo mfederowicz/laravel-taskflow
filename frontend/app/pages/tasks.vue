@@ -100,6 +100,15 @@
       </p>
     </form>
     <div>
+      <label for="filter-search">Search</label>
+      <input
+          id="filter-search"
+          v-model="filters.search"
+          type="search"
+          placeholder="Search title or description"
+          @keyup.enter="applyFilters"
+      >
+
       <label for="filter-status">Status</label>
       <select id="filter-status" v-model="filters.status" @change="applyFilters">
         <option value="">All</option>
@@ -115,6 +124,22 @@
         <option value="medium">Medium</option>
         <option value="high">High</option>
       </select>
+
+      <label for="filter-due-from">Due from</label>
+      <input
+          id="filter-due-from"
+          v-model="filters.due_from"
+          type="date"
+          @change="applyFilters"
+      >
+
+      <label for="filter-due-to">Due to</label>
+      <input
+          id="filter-due-to"
+          v-model="filters.due_to"
+          type="date"
+          @change="applyFilters"
+      >
     </div>
     <hr>
 
@@ -401,6 +426,9 @@ const form = reactive({
 const filters = reactive({
   status: '',
   priority: '',
+  search: '',
+  due_from: '',
+  due_to: '',
 })
 
 const editingTaskId = ref<number | null>(null)
@@ -452,6 +480,18 @@ async function loadTasksWithFilters() {
 
     if (filters.priority) {
       params.set('priority', filters.priority)
+    }
+
+    if (filters.search.trim()) {
+      params.set('search', filters.search.trim())
+    }
+
+    if (filters.due_from) {
+      params.set('due_from', filters.due_from)
+    }
+
+    if (filters.due_to) {
+      params.set('due_to', filters.due_to)
     }
 
     params.set('page', String(currentPage.value))
