@@ -1,3 +1,5 @@
+import tailwindcss from '@tailwindcss/vite'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // @ts-ignore
 export default defineNuxtConfig({
@@ -10,6 +12,7 @@ export default defineNuxtConfig({
     },
   },
   vite: {
+    plugins: [tailwindcss()],
     server: {
       allowedHosts: (process.env.ALLOWED_HOSTS ?? 'localhost,127.0.0.1')
         .split(',')
