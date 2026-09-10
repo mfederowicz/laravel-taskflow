@@ -1,6 +1,8 @@
 import type { User } from '~/types/user'
 
-let refreshPromise: Promise<{ ok: boolean; locked: boolean }> | null = null
+type RefreshResult = { ok: boolean; locked: boolean; retryable: boolean }
+
+let refreshPromise: Promise<RefreshResult> | null = null
 
 function useAuth() {
     const token = useState<string | null>('auth-token', () => null)
@@ -172,7 +174,7 @@ function useAuth() {
         }
     }
 
-    function refreshAccessToken(): Promise<{ ok: boolean; locked: boolean }> {
+    function refreshAccessToken(): Promise<RefreshResult> {
         if (!refreshPromise) {
             refreshPromise = performRefresh().finally(() => {
                 refreshPromise = null
@@ -182,7 +184,7 @@ function useAuth() {
         return refreshPromise
     }
 
-    async function performRefresh(): Promise<{ ok: boolean; locked: boolean }> {
+    async function performRefresh(): Promise<RefreshResult> {
         const method = authMethod.value
         const currentToken = getToken()
 
@@ -193,7 +195,7 @@ function useAuth() {
                     !passportClientSecret.value ||
                     !refreshToken.value
                 ) {
-                    return { ok: false, locked: false }
+                    return { ok: false, locked: false, retryable: false }
                 }
 
                 const response = await $fetch<{
@@ -221,13 +223,13 @@ function useAuth() {
                     response.client_secret ?? passportClientSecret.value,
                 )
 
-                return { ok: true, locked: false }
+                return { ok: true, locked: false, retryable: false }
             }
 
             // JWT and Sanctum both rotate the (expired) access token itself
             // via a dedicated public refresh endpoint within a sliding window.
             if (!currentToken) {
-                return { ok: false, locked: false }
+                return { ok: false, locked: false, retryable: false }
             }
 
             const endpoint =
@@ -248,16 +250,26 @@ function useAuth() {
 
             setToken(response.data.token)
 
-            return { ok: true, locked: false }
+            return { ok: true, locked: false, retryable: false }
         } catch (error: any) {
-            // Refresh failed; clear auth and let the caller redirect to login.
+            const status = error?.response?.status
+
+            // Server / network / throttle hiccup on the refresh endpoint — keep
+            // the session; the caller surfaces the error without logging out.
+            if (!status || status >= 500 || status === 429) {
+                return { ok: false, locked: false, retryable: true }
+            }
+
+            // The token (or Passport refresh token) is genuinely unusable —
+            // clear auth and let the caller redirect to login.
             clearAuth()
 
             return {
                 ok: false,
                 locked:
-                    error?.response?.status === 403 &&
+                    status === 403 &&
                     error?.data?.message === 'Account is locked.',
+                retryable: false,
             }
         }
     }

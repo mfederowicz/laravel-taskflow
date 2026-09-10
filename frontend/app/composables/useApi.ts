@@ -53,6 +53,12 @@ function useApi() {
                     throw error
                 }
 
+                if (result.retryable) {
+                    // Transient refresh failure (server / network / throttle) —
+                    // keep the session, surface the caller's error page.
+                    throw error
+                }
+
                 if (result.ok) {
                     const newToken = getToken()
                     if (newToken) {
