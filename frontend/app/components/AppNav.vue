@@ -14,6 +14,10 @@
       Users
     </NuxtLink>
 
+    <NuxtLink v-if="isManager" to="/oauth">
+      OAuth clients
+    </NuxtLink>
+
     <a href="/api/docs" target="_blank" rel="noopener">
       API docs
     </a>

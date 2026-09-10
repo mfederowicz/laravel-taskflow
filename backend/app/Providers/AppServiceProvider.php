@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\User;
 use Dedoc\Scramble\Configuration\OperationTransformers;
 use Dedoc\Scramble\Scramble;
 use Dedoc\Scramble\Support\Generator\OpenApi;
@@ -11,6 +12,7 @@ use Dedoc\Scramble\Support\Generator\SecurityRequirement;
 use Dedoc\Scramble\Support\Generator\SecurityScheme;
 use Dedoc\Scramble\Support\Generator\Tag;
 use Dedoc\Scramble\Support\RouteInfo;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Laravel\Passport\Passport;
@@ -34,6 +36,8 @@ class AppServiceProvider extends ServiceProvider
 
         Passport::tokensExpireIn(now()->addMinutes((int) env('PASSPORT_TOKEN_EXPIRATION_MINUTES', 60)));
         Passport::refreshTokensExpireIn(now()->addDays((int) env('PASSPORT_REFRESH_TOKEN_EXPIRATION_DAYS', 7)));
+
+        Gate::define('manage-oauth-clients', fn (User $user): bool => $user->isManager());
 
         Scramble::configure()
             ->expose(

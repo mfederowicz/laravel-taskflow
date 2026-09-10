@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\UserController;
@@ -53,6 +54,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/users/{user}/unlock', [UserController::class, 'unlock']);
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);
         Route::put('/users/{user}/password', [UserController::class, 'resetPassword']);
+
+        // OAuth clients (manager only)
+        Route::get('/oauth/clients', [OAuthClientController::class, 'index']);
+        Route::post('/oauth/clients', [OAuthClientController::class, 'store']);
+        Route::delete('/oauth/clients/{client}', [OAuthClientController::class, 'destroy']);
 
         // Tasks
         Route::get('/tasks', [TaskController::class, 'index']);
