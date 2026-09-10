@@ -2,6 +2,10 @@
   <nav class="flex items-center gap-4 bg-white px-6 py-3 shadow-sm">
     <strong class="mr-2">TaskFlow</strong>
 
+    <NuxtLink class="text-sm hover:text-blue-600" to="/dashboard">
+      Dashboard
+    </NuxtLink>
+
     <NuxtLink class="text-sm hover:text-blue-600" to="/tasks">
       Tasks
     </NuxtLink>
