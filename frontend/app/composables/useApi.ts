@@ -37,8 +37,15 @@ function useApi() {
             }
 
             if (is401) {
-                const refreshed = await refreshAccessToken()
-                if (refreshed) {
+                const result = await refreshAccessToken()
+
+                if (result.locked) {
+                    clearAuth()
+                    navigateTo('/login?locked=1')
+                    throw error
+                }
+
+                if (result.ok) {
                     const newToken = getToken()
                     if (newToken) {
                         headers.Authorization = `Bearer ${newToken}`

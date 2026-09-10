@@ -1,6 +1,6 @@
 import type { User } from '~/types/user'
 
-let refreshPromise: Promise<boolean> | null = null
+let refreshPromise: Promise<{ ok: boolean; locked: boolean }> | null = null
 
 function useAuth() {
     const token = useState<string | null>('auth-token', () => null)
@@ -172,7 +172,7 @@ function useAuth() {
         }
     }
 
-    function refreshAccessToken(): Promise<boolean> {
+    function refreshAccessToken(): Promise<{ ok: boolean; locked: boolean }> {
         if (!refreshPromise) {
             refreshPromise = performRefresh().finally(() => {
                 refreshPromise = null
@@ -182,7 +182,7 @@ function useAuth() {
         return refreshPromise
     }
 
-    async function performRefresh(): Promise<boolean> {
+    async function performRefresh(): Promise<{ ok: boolean; locked: boolean }> {
         const method = authMethod.value
         const currentToken = getToken()
 
@@ -193,7 +193,7 @@ function useAuth() {
                     !passportClientSecret.value ||
                     !refreshToken.value
                 ) {
-                    return false
+                    return { ok: false, locked: false }
                 }
 
                 const response = await $fetch<{
@@ -221,13 +221,13 @@ function useAuth() {
                     response.client_secret ?? passportClientSecret.value,
                 )
 
-                return true
+                return { ok: true, locked: false }
             }
 
             // JWT and Sanctum both rotate the (expired) access token itself
             // via a dedicated public refresh endpoint within a sliding window.
             if (!currentToken) {
-                return false
+                return { ok: false, locked: false }
             }
 
             const endpoint =
@@ -248,11 +248,17 @@ function useAuth() {
 
             setToken(response.data.token)
 
-            return true
-        } catch {
+            return { ok: true, locked: false }
+        } catch (error: any) {
             // Refresh failed; clear auth and let the caller redirect to login.
             clearAuth()
-            return false
+
+            return {
+                ok: false,
+                locked:
+                    error?.response?.status === 403 &&
+                    error?.data?.message === 'Account is locked.',
+            }
         }
     }
 
