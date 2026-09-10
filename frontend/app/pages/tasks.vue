@@ -1,17 +1,18 @@
 <template>
   <AppNav />
   <main>
-    <h1>My Tasks</h1>
+    <h1 class="mt-0 text-2xl font-bold text-gray-900">My Tasks</h1>
 
-    <form @submit.prevent="createTask">
-      <div>
-        <label for="project">Project</label>
+    <form @submit.prevent="createTask" class="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <div class="mb-4">
+        <label for="project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
         <select
             id="project"
             v-model="form.project_id"
             :disabled="projectsLoading"
             required
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         >
           <option value="" disabled>
             {{ projectsLoading ? 'Loading projects...' : 'Select a project' }}
@@ -26,205 +27,247 @@
           </option>
         </select>
 
-        <p v-if="validationErrors.project_id">
+        <p v-if="validationErrors.project_id" class="mt-1 text-sm text-red-600">
           {{ validationErrors.project_id[0] }}
         </p>
 
-        <p v-if="projectsError">
+        <p v-if="projectsError" class="mt-1 text-sm text-red-600">
           {{ projectsError }}
         </p>
       </div>
-      <div>
-        <label for="title">Title</label>
+      <div class="mb-4">
+        <label for="title" class="mb-1 block text-sm font-semibold text-gray-700">Title</label>
         <input
             id="title"
             v-model="form.title"
             type="text"
             required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         >
-        <p v-if="validationErrors.title">
+        <p v-if="validationErrors.title" class="mt-1 text-sm text-red-600">
           {{ validationErrors.title[0] }}
         </p>
       </div>
 
-      <div>
-        <label for="description">Description</label>
+      <div class="mb-4">
+        <label for="description" class="mb-1 block text-sm font-semibold text-gray-700">Description</label>
         <textarea
             id="description"
             v-model="form.description"
+            class="min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         />
       </div>
 
-      <div>
-        <label for="status">Status</label>
-        <select id="status" v-model="form.status">
+      <div class="mb-4">
+        <label for="status" class="mb-1 block text-sm font-semibold text-gray-700">Status</label>
+        <select id="status" v-model="form.status" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
           <option value="pending">Pending</option>
           <option value="in_progress">In progress</option>
           <option value="completed">Completed</option>
         </select>
-        <p v-if="validationErrors.status">
+        <p v-if="validationErrors.status" class="mt-1 text-sm text-red-600">
           {{ validationErrors.status[0] }}
         </p>
       </div>
 
-      <div>
-        <label for="priority">Priority</label>
-        <select id="priority" v-model="form.priority">
+      <div class="mb-4">
+        <label for="priority" class="mb-1 block text-sm font-semibold text-gray-700">Priority</label>
+        <select id="priority" v-model="form.priority" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
           <option value="low">Low</option>
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </select>
-        <p v-if="validationErrors.priority">
+        <p v-if="validationErrors.priority" class="mt-1 text-sm text-red-600">
           {{ validationErrors.priority[0] }}
         </p>
       </div>
 
-      <div>
-        <label for="due_date">Due date</label>
+      <div class="mb-4">
+        <label for="due_date" class="mb-1 block text-sm font-semibold text-gray-700">Due date</label>
         <input
             id="due_date"
             v-model="form.due_date"
             type="date"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         >
-        <p v-if="validationErrors.due_date">
+        <p v-if="validationErrors.due_date" class="mt-1 text-sm text-red-600">
           {{ validationErrors.due_date[0] }}
         </p>
       </div>
 
-      <button type="submit" :disabled="creating">
+      <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
         {{ creating ? 'Creating...' : 'Create task' }}
       </button>
 
-      <p v-if="createError">
+      <p v-if="createError" class="mt-3 text-sm text-red-600">
         {{ createError }}
       </p>
     </form>
-    <div>
-      <label for="filter-search">Search</label>
-      <input
-          id="filter-search"
-          v-model="filters.search"
-          type="search"
-          placeholder="Search title or description"
-          @keyup.enter="applyFilters"
-      >
 
-      <label for="filter-status">Status</label>
-      <select id="filter-status" v-model="filters.status" @change="applyFilters">
-        <option value="">All</option>
-        <option value="pending">Pending</option>
-        <option value="in_progress">In progress</option>
-        <option value="completed">Completed</option>
-      </select>
+    <div class="mb-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div>
+          <label for="filter-search" class="mb-1 block text-sm font-semibold text-gray-700">Search</label>
+          <input
+              id="filter-search"
+              v-model="filters.search"
+              type="search"
+              placeholder="Search title or description"
+              @keyup.enter="applyFilters"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          >
+        </div>
 
-      <label for="filter-priority">Priority</label>
-      <select id="filter-priority" v-model="filters.priority" @change="applyFilters">
-        <option value="">All</option>
-        <option value="low">Low</option>
-        <option value="medium">Medium</option>
-        <option value="high">High</option>
-      </select>
+        <div>
+          <label for="filter-status" class="mb-1 block text-sm font-semibold text-gray-700">Status</label>
+          <select id="filter-status" v-model="filters.status" @change="applyFilters" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
 
-      <label for="filter-due-from">Due from</label>
-      <input
-          id="filter-due-from"
-          v-model="filters.due_from"
-          type="date"
-          @change="applyFilters"
-      >
+        <div>
+          <label for="filter-priority" class="mb-1 block text-sm font-semibold text-gray-700">Priority</label>
+          <select id="filter-priority" v-model="filters.priority" @change="applyFilters" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+            <option value="">All</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
 
-      <label for="filter-due-to">Due to</label>
-      <input
-          id="filter-due-to"
-          v-model="filters.due_to"
-          type="date"
-          @change="applyFilters"
-      >
+        <div>
+          <label for="filter-due-from" class="mb-1 block text-sm font-semibold text-gray-700">Due from</label>
+          <input
+              id="filter-due-from"
+              v-model="filters.due_from"
+              type="date"
+              @change="applyFilters"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          >
+        </div>
+
+        <div>
+          <label for="filter-due-to" class="mb-1 block text-sm font-semibold text-gray-700">Due to</label>
+          <input
+              id="filter-due-to"
+              v-model="filters.due_to"
+              type="date"
+              @change="applyFilters"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          >
+        </div>
+      </div>
     </div>
-    <hr>
 
-    <p v-if="pending">Loading tasks...</p>
+    <p v-if="pending" class="text-sm text-gray-500">Loading tasks...</p>
 
-    <p v-else-if="error">
+    <p v-else-if="error" class="text-sm text-red-600">
       Failed to load tasks.
     </p>
 
-    <ul v-else>
-      <li v-for="task in tasks" :key="task.id">
+    <ul v-else class="space-y-4">
+      <li v-for="task in tasks" :key="task.id" class="flex items-start gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
         <template v-if="editingTaskId === task.id">
-          <div class="list-item-content">
-            <label for="edit-project">Project</label>
+          <div class="min-w-0 flex-1 space-y-4">
+            <div>
+              <label for="edit-project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
-            <select
-                id="edit-project"
-                v-model="editForm.project_id"
-                required
-            >
-              <option value="" disabled>
-                Select a project
-              </option>
-
-              <option
-                  v-for="project in projects"
-                  :key="project.id"
-                  :value="String(project.id)"
+              <select
+                  id="edit-project"
+                  v-model="editForm.project_id"
+                  required
+                  class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
-                {{ project.name }}
-              </option>
-            </select>
+                <option value="" disabled>
+                  Select a project
+                </option>
 
-            <p v-if="updateValidationErrors.project_id">
-              {{ updateValidationErrors.project_id[0] }}
-            </p>
+                <option
+                    v-for="project in projects"
+                    :key="project.id"
+                    :value="String(project.id)"
+                >
+                  {{ project.name }}
+                </option>
+              </select>
 
-            <input
-                v-model="editForm.title"
-                type="text"
-            >
-            <p v-if="updateValidationErrors.title">
-              {{ updateValidationErrors.title[0] }}
-            </p>
+              <p v-if="updateValidationErrors.project_id" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.project_id[0] }}
+              </p>
+            </div>
 
-            <textarea
-                v-model="editForm.description"
-            />
-            <p v-if="updateValidationErrors.description">
-              {{ updateValidationErrors.description[0] }}
-            </p>
+            <div>
+              <label for="edit-title" class="mb-1 block text-sm font-semibold text-gray-700">Title</label>
+              <input
+                  id="edit-title"
+                  v-model="editForm.title"
+                  type="text"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+              <p v-if="updateValidationErrors.title" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.title[0] }}
+              </p>
+            </div>
 
-            <select v-model="editForm.status">
-              <option value="pending">Pending</option>
-              <option value="in_progress">In progress</option>
-              <option value="completed">Completed</option>
-            </select>
-            <p v-if="updateValidationErrors.status">
-              {{ updateValidationErrors.status[0] }}
-            </p>
+            <div>
+              <label for="edit-description" class="mb-1 block text-sm font-semibold text-gray-700">Description</label>
+              <textarea
+                  id="edit-description"
+                  v-model="editForm.description"
+                  class="min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+              <p v-if="updateValidationErrors.description" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.description[0] }}
+              </p>
+            </div>
 
-            <select v-model="editForm.priority">
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <p v-if="updateValidationErrors.priority">
-              {{ updateValidationErrors.priority[0] }}
-            </p>
+            <div>
+              <label for="edit-status" class="mb-1 block text-sm font-semibold text-gray-700">Status</label>
+              <select id="edit-status" v-model="editForm.status" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                <option value="pending">Pending</option>
+                <option value="in_progress">In progress</option>
+                <option value="completed">Completed</option>
+              </select>
+              <p v-if="updateValidationErrors.status" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.status[0] }}
+              </p>
+            </div>
 
-            <input
-                v-model="editForm.due_date"
-                type="date"
-            >
-            <p v-if="updateValidationErrors.due_date">
-              {{ updateValidationErrors.due_date[0] }}
-            </p>
+            <div>
+              <label for="edit-priority" class="mb-1 block text-sm font-semibold text-gray-700">Priority</label>
+              <select id="edit-priority" v-model="editForm.priority" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
+              <p v-if="updateValidationErrors.priority" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.priority[0] }}
+              </p>
+            </div>
 
+            <div>
+              <label for="edit-due-date" class="mb-1 block text-sm font-semibold text-gray-700">Due date</label>
+              <input
+                  id="edit-due-date"
+                  v-model="editForm.due_date"
+                  type="date"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+              <p v-if="updateValidationErrors.due_date" class="mt-1 text-sm text-red-600">
+                {{ updateValidationErrors.due_date[0] }}
+              </p>
+            </div>
           </div>
 
-          <div class="list-item-actions">
+          <div class="flex shrink-0 flex-col gap-2">
             <button
                 type="button"
                 :disabled="updating"
                 @click="updateTask"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
             >
               {{ updating ? 'Saving...' : 'Save' }}
             </button>
@@ -233,69 +276,74 @@
                 type="button"
                 :disabled="updating"
                 @click="cancelEditing"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               Cancel
             </button>
           </div>
 
-
-          <p v-if="updateError">
+          <p v-if="updateError" class="text-sm text-red-600">
             {{ updateError }}
           </p>
         </template>
 
         <template v-else>
-          <div class="list-item-content">
+          <div class="min-w-0 flex-1">
             <div>
-              <strong>{{ task.title }}</strong>
-              — {{ task.status }}
-              — {{ task.priority }}
-              <span v-if="task.project">
+              <strong class="text-gray-900">{{ task.title }}</strong>
+              <span class="text-gray-500">
+                — <span class="text-gray-400">{{ task.status }}</span>
+                — <span class="text-gray-400">{{ task.priority }}</span>
+              </span>
+              <span v-if="task.project" class="text-gray-500">
                 — {{ task.project.name }}
               </span>
               <span
                   v-if="dueBadge(task)"
-                  class="badge"
-                  :class="`badge-${dueBadge(task).type}`"
+                  class="ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  :class="badgeClass(task)"
               >
                 {{ dueBadge(task).label }}
               </span>
             </div>
-            <p v-if="task.description">
+            <p v-if="task.description" class="mt-1 text-sm text-gray-600">
               {{ task.description }}
             </p>
 
-            <div>
+            <div class="mt-3">
               <button
                   type="button"
                   @click="loadComments(task.id)"
+                  class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
               >
                 Load comments
               </button>
 
-              <p v-if="commentLoading[task.id]">
+              <p v-if="commentLoading[task.id]" class="mt-2 text-sm text-gray-500">
                 Loading comments...
               </p>
 
-              <div v-if="comments[task.id]">
+              <div v-if="comments[task.id]" class="mt-3 space-y-2">
                 <div
                     v-for="comment in comments[task.id]"
                     :key="comment.id"
+                    class="rounded-lg bg-gray-50 px-4 py-2"
                 >
-                  <strong>{{ comment.user.name }}</strong>
-                  <span> — {{ comment.body }}</span>
+                  <strong class="text-sm text-gray-900">{{ comment.user.name }}</strong>
+                  <span class="text-sm text-gray-600"> — {{ comment.body }}</span>
                 </div>
 
-                <div v-if="(commentLastPage[task.id] ?? 1) > 1">
+                <div v-if="(commentLastPage[task.id] ?? 1) > 1" class="flex items-center gap-3">
                   <button
                       type="button"
                       :disabled="(commentCurrentPage[task.id] ?? 1) === 1"
                       @click="previousCommentsPage(task.id)"
+                      class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
                   >
                     Previous
                   </button>
 
-                  <span>
+                  <span class="text-sm text-gray-600">
                     Page {{ commentCurrentPage[task.id] ?? 1 }} of {{ commentLastPage[task.id] ?? 1 }}
                   </span>
 
@@ -303,27 +351,30 @@
                       type="button"
                       :disabled="(commentCurrentPage[task.id] ?? 1) >= (commentLastPage[task.id] ?? 1)"
                       @click="nextCommentsPage(task.id)"
+                      class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
                   >
                     Next
                   </button>
                 </div>
 
-                <form @submit.prevent="createComment(task.id)">
-                <textarea
-                    v-model="commentBodies[task.id]"
-                    placeholder="Write a comment..."
-                    required
-                />
+                <form @submit.prevent="createComment(task.id)" class="flex flex-col gap-2">
+                  <textarea
+                      v-model="commentBodies[task.id]"
+                      placeholder="Write a comment..."
+                      required
+                      class="min-h-16 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                  />
 
                   <button
                       type="submit"
                       :disabled="commentCreating[task.id]"
+                      class="self-start rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
                   >
                     {{ commentCreating[task.id] ? 'Adding...' : 'Add comment' }}
                   </button>
                 </form>
 
-                <p v-if="commentErrors[task.id]">
+                <p v-if="commentErrors[task.id]" class="text-sm text-red-600">
                   {{ commentErrors[task.id] }}
                 </p>
               </div>
@@ -331,11 +382,11 @@
 
           </div>
 
-
-          <div class="list-item-actions">
+          <div class="flex shrink-0 flex-col gap-2">
             <button
                 type="button"
                 @click="startEditing(task)"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Edit
             </button>
@@ -343,25 +394,27 @@
             <button
                 type="button"
                 @click="deleteTask(task.id)"
+                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             >
               Delete
             </button>
           </div>
 
-
         </template>
       </li>
     </ul>
-    <div v-if="lastPage > 1">
+
+    <div v-if="lastPage > 1" class="mt-6 flex items-center gap-4">
       <button
           type="button"
           :disabled="currentPage === 1"
           @click="previousPage"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
       >
         Previous
       </button>
 
-      <span>
+      <span class="text-sm text-gray-600">
     Page {{ currentPage }} of {{ lastPage }}
   </span>
 
@@ -369,6 +422,7 @@
           type="button"
           :disabled="currentPage === lastPage"
           @click="nextPage"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
       >
         Next
       </button>
@@ -563,6 +617,20 @@ function dueBadge(task: Task): { label: string; type: string } | null {
   }
 
   return null
+}
+
+function badgeClass(task: Task): string {
+  const type = dueBadge(task)?.type
+
+  if (type === 'overdue') {
+    return 'bg-red-100 text-red-700'
+  }
+
+  if (type === 'due-today') {
+    return 'bg-amber-100 text-amber-700'
+  }
+
+  return 'bg-blue-100 text-blue-700'
 }
 
 async function createTask() {

@@ -1,82 +1,84 @@
 <template>
-  <main class="auth-page">
-    <section class="auth-card">
-      <h1>TaskFlow</h1>
+  <main class="flex min-h-screen items-center justify-center">
+    <section class="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+      <h1 class="mt-0 text-center text-2xl font-bold text-gray-900">TaskFlow</h1>
 
-      <p class="auth-intro">
+      <p class="mt-2 text-center text-sm text-gray-500">
         A simple project management application for organizing projects,
         tasks, and comments.
       </p>
 
-      <h2>Sign in</h2>
-      
-      <!-- Auth mode dropdown -->
-      <div class="auth-method-select">
-        <label for="auth-method">Authentication Method</label>
-        <select id="auth-method" v-model="authMethod">
+      <h2 class="mb-4 mt-8 text-lg font-semibold text-gray-900">Sign in</h2>
+
+      <div class="mb-4">
+        <label for="auth-method" class="mb-1 block text-sm font-semibold text-gray-700">Authentication Method</label>
+        <select id="auth-method" v-model="authMethod" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
           <option value="sanctum">Sanctum (Personal Access Tokens)</option>
           <option value="jwt">JWT (Bearer Tokens)</option>
           <option value="passport">Passport (OAuth2)</option>
         </select>
       </div>
 
-      <form @submit.prevent="login">
+      <form @submit.prevent="login" class="space-y-4">
         <div>
-          <label for="email">Email</label>
+          <label for="email" class="mb-1 block text-sm font-semibold text-gray-700">Email</label>
           <input
               id="email"
               v-model="email"
               type="email"
               required
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
         </div>
 
         <div>
-          <label for="password">Password</label>
+          <label for="password" class="mb-1 block text-sm font-semibold text-gray-700">Password</label>
           <input
               id="password"
               v-model="password"
               type="password"
               required
+              class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
         </div>
 
-        <button type="submit" :disabled="pending">
+        <button type="submit" :disabled="pending" class="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
           {{ pending ? 'Logging in...' : 'Login' }}
         </button>
       </form>
 
-      <p v-if="lockedNotice" class="locked-notice">
+      <p v-if="lockedNotice" class="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800">
         Your account is locked. Contact a manager to regain access.
       </p>
 
-      <p v-if="error">
+      <p v-if="error" class="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">
         {{ error }}
       </p>
-      <details class="login-help">
-        <summary>Demo account & developer information</summary>
 
-        <div class="demo-info">
-          <strong>Demo account</strong>
+      <details class="mt-6">
+        <summary class="cursor-pointer text-sm font-semibold text-gray-700">Demo account & developer information</summary>
 
-          <p>
-            Email: <code>demo@example.com</code><br>
-            Password: <code>password123</code>
+        <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+          <strong class="text-gray-900">Demo account</strong>
+
+          <p class="mt-2 text-gray-600">
+            Email: <code class="rounded bg-gray-200 px-1">demo@example.com</code><br>
+            Password: <code class="rounded bg-gray-200 px-1">password123</code>
           </p>
         </div>
 
-        <div class="developer-info">
-          <strong>Create another user</strong>
+        <div class="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+          <strong class="text-gray-900">Create another user</strong>
 
-          <p>
+          <p class="mt-2 text-gray-600">
             New users can be created from the Laravel application using Artisan:
           </p>
 
-          <pre><code>./bin/artisan tinker</code></pre>
+          <pre class="mt-2 overflow-x-auto rounded-md bg-gray-200 p-3 text-xs"><code>./bin/artisan tinker</code></pre>
 
-          <p>Then:</p>
+          <p class="mt-2 text-gray-600">Then:</p>
 
-          <pre><code>App\Models\User::create([
+          <pre class="mt-2 overflow-x-auto rounded-md bg-gray-200 p-3 text-xs"><code>App\Models\User::create([
     'name' => 'John Doe',
     'email' => 'john@example.com',
     'password' => Illuminate\Support\Facades\Hash::make('password123'),

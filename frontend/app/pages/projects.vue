@@ -1,82 +1,89 @@
 <template>
   <AppNav />
   <main>
+    <h1 class="mt-0 text-2xl font-bold text-gray-900">My Projects</h1>
 
-
-    <h1>My Projects</h1>
-
-    <form @submit.prevent="createProject">
-      <div>
-        <label for="name">Name</label>
+    <form @submit.prevent="createProject" class="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <div class="mb-4">
+        <label for="name" class="mb-1 block text-sm font-semibold text-gray-700">Name</label>
         <input
             id="name"
             v-model="form.name"
             type="text"
             required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         >
 
-        <p v-if="validationErrors.name">
+        <p v-if="validationErrors.name" class="mt-1 text-sm text-red-600">
           {{ validationErrors.name[0] }}
         </p>
       </div>
 
-      <div>
-        <label for="description">Description</label>
+      <div class="mb-4">
+        <label for="description" class="mb-1 block text-sm font-semibold text-gray-700">Description</label>
         <textarea
             id="description"
             v-model="form.description"
+            class="min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
         />
 
-        <p v-if="validationErrors.description">
+        <p v-if="validationErrors.description" class="mt-1 text-sm text-red-600">
           {{ validationErrors.description[0] }}
         </p>
       </div>
 
-      <button type="submit" :disabled="creating">
+      <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
         {{ creating ? 'Creating...' : 'Create project' }}
       </button>
 
-      <p v-if="createError">
+      <p v-if="createError" class="mt-3 text-sm text-red-600">
         {{ createError }}
       </p>
     </form>
 
-    <hr>
-
-    <p v-if="pending">
+    <p v-if="pending" class="text-sm text-gray-500">
       Loading projects...
     </p>
 
-    <p v-else-if="error">
+    <p v-else-if="error" class="text-sm text-red-600">
       Failed to load projects.
     </p>
 
-    <ul v-else>
-      <li v-for="project in projects" :key="project.id">
+    <ul v-else class="space-y-4">
+      <li v-for="project in projects" :key="project.id" class="flex items-start gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
         <template v-if="editingProjectId === project.id">
-          <div class="list-item-content">
-            <input
-                v-model="editForm.name"
-                type="text"
-            >
+          <div class="min-w-0 flex-1 space-y-4">
+            <div>
+              <label for="edit-name" class="mb-1 block text-sm font-semibold text-gray-700">Name</label>
+              <input
+                  v-model="editForm.name"
+                  type="text"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+            </div>
 
-            <p v-if="updateValidationErrors.name">
+            <p v-if="updateValidationErrors.name" class="text-sm text-red-600">
               {{ updateValidationErrors.name[0] }}
             </p>
 
-            <textarea
-                v-model="editForm.description"
-            />
+            <div>
+              <label for="edit-description" class="mb-1 block text-sm font-semibold text-gray-700">Description</label>
+              <textarea
+                  v-model="editForm.description"
+                  class="min-h-24 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+            </div>
 
-            <p v-if="updateValidationErrors.description">
+            <p v-if="updateValidationErrors.description" class="text-sm text-red-600">
               {{ updateValidationErrors.description[0] }}
             </p>
           </div>
-          <div class="list-item-actions">
+          <div class="flex shrink-0 flex-col gap-2">
             <button
                 type="button"
                 :disabled="updating"
                 @click="updateProject"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
             >
               {{ updating ? 'Saving...' : 'Save' }}
             </button>
@@ -85,11 +92,12 @@
                 type="button"
                 :disabled="updating"
                 @click="cancelEditing"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               Cancel
             </button>
 
-            <p v-if="updateError">
+            <p v-if="updateError" class="text-sm text-red-600">
               {{ updateError }}
             </p>
           </div>
@@ -97,19 +105,19 @@
         </template>
 
         <template v-else>
-          <div class="list-item-content">
-            <strong>{{ project.name }}</strong>
+          <div class="min-w-0 flex-1">
+            <strong class="text-gray-900">{{ project.name }}</strong>
 
-            <span v-if="project.description">
+            <span v-if="project.description" class="text-gray-600">
             — {{ project.description }}
           </span>
           </div>
 
-
-          <div class="list-item-actions">
+          <div class="flex shrink-0 flex-col gap-2">
             <button
                 type="button"
                 @click="startEditing(project)"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
               Edit
             </button>
@@ -117,6 +125,7 @@
             <button
                 type="button"
                 @click="deleteProject(project.id)"
+                class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             >
               Delete
             </button>
@@ -126,16 +135,17 @@
       </li>
     </ul>
 
-    <div v-if="lastPage > 1">
+    <div v-if="lastPage > 1" class="mt-6 flex items-center gap-4">
       <button
           type="button"
           :disabled="currentPage === 1"
           @click="previousPage"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
       >
         Previous
       </button>
 
-      <span>
+      <span class="text-sm text-gray-600">
     Page {{ currentPage }} of {{ lastPage }}
   </span>
 
@@ -143,6 +153,7 @@
           type="button"
           :disabled="currentPage === lastPage"
           @click="nextPage"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
       >
         Next
       </button>
