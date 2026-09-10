@@ -1,12 +1,16 @@
 <?php
 
+use App\Http\Middleware\RejectLockedPassportLogin;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\Passport;
 
 Route::post('/token', [
     'uses' => 'AccessTokenController@issueToken',
     'as' => 'token',
-    'middleware' => 'throttle',
+    'middleware' => [
+        'throttle',
+        RejectLockedPassportLogin::class,
+    ],
 ]);
 
 Route::get('/authorize', [

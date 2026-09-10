@@ -123,4 +123,42 @@ class OAuthClientAdminTest extends TestCase
     {
         $this->getJson('/api/v1/oauth/clients')->assertUnauthorized();
     }
+
+    public function test_locked_user_cannot_obtain_passport_token(): void
+    {
+        $client = $this->createPasswordClient();
+        User::factory()->locked()->create([
+            'email' => 'locked-oauth@example.com',
+            'password' => 'password123',
+        ]);
+
+        $this->postJson('/api/v1/oauth/token', [
+            'grant_type' => 'password',
+            'client_id' => $client->id,
+            'client_secret' => $client->plainSecret,
+            'username' => 'locked-oauth@example.com',
+            'password' => 'password123',
+            'scope' => '',
+        ])->assertUnauthorized()
+            ->assertJson(['error' => 'invalid_grant']);
+    }
+
+    public function test_active_user_can_obtain_passport_token(): void
+    {
+        $client = $this->createPasswordClient();
+        User::factory()->create([
+            'email' => 'active-oauth@example.com',
+            'password' => 'password123',
+        ]);
+
+        $this->postJson('/api/v1/oauth/token', [
+            'grant_type' => 'password',
+            'client_id' => $client->id,
+            'client_secret' => $client->plainSecret,
+            'username' => 'active-oauth@example.com',
+            'password' => 'password123',
+            'scope' => '',
+        ])->assertOk()
+            ->assertJsonStructure(['token_type', 'expires_in', 'access_token']);
+    }
 }
