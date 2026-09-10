@@ -1,4 +1,5 @@
 <template>
+  <AppNav />
   <main>
     <div class="flex items-center justify-between">
       <div>
