@@ -1,25 +1,9 @@
 <template>
   <AppNav />
   <main>
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
-        <p class="mt-1 text-sm text-gray-500">Your tasks and projects at a glance.</p>
-      </div>
-      <div class="flex gap-2">
-        <NuxtLink
-          to="/tasks"
-          class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
-        >
-          All tasks
-        </NuxtLink>
-        <NuxtLink
-          to="/projects"
-          class="rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
-        >
-          Projects
-        </NuxtLink>
-      </div>
+    <div>
+      <h1 class="text-2xl font-semibold text-gray-900">Dashboard</h1>
+      <p class="mt-1 text-sm text-gray-500">Your tasks and projects at a glance.</p>
     </div>
 
     <p v-if="loading" class="mt-8 text-sm text-gray-500">Loading…</p>
