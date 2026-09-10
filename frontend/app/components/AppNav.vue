@@ -1,20 +1,24 @@
 <template>
-  <nav>
-    <strong>TaskFlow</strong>
+  <nav class="flex items-center gap-4 bg-white px-6 py-3 shadow-sm">
+    <strong class="mr-2">TaskFlow</strong>
 
-    <NuxtLink to="/tasks">
+    <NuxtLink class="text-sm hover:text-blue-600" to="/dashboard">
+      Dashboard
+    </NuxtLink>
+
+    <NuxtLink class="text-sm hover:text-blue-600" to="/tasks">
       Tasks
     </NuxtLink>
 
-    <NuxtLink to="/projects">
+    <NuxtLink class="text-sm hover:text-blue-600" to="/projects">
       Projects
     </NuxtLink>
 
-    <NuxtLink v-if="isManager" to="/users">
+    <NuxtLink v-if="isManager" class="text-sm hover:text-blue-600" to="/users">
       Users
     </NuxtLink>
 
-    <NuxtLink v-if="isManager" to="/oauth">
+    <NuxtLink v-if="isManager" class="text-sm hover:text-blue-600" to="/oauth">
       OAuth clients
     </NuxtLink>
 

@@ -1,10 +1,10 @@
 <template>
   <AppNav />
   <main>
-    <h1>OAuth clients</h1>
+    <h1 class="mt-0 text-2xl font-bold text-gray-900">OAuth clients</h1>
 
-    <form @submit.prevent="createClient">
-      <label for="client-name">Name</label>
+    <form @submit.prevent="createClient" class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+      <label for="client-name" class="mb-1 block text-sm font-semibold text-gray-700">Name</label>
       <input
           id="client-name"
           v-model="name"
@@ -12,17 +12,18 @@
           placeholder="e.g. Mobile app"
           maxlength="255"
           required
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
       >
-      <button type="submit" :disabled="creating">
+      <button type="submit" :disabled="creating" class="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
         {{ creating ? 'Creating...' : 'Create client' }}
       </button>
 
-      <p v-if="createError">
+      <p v-if="createError" class="mt-2 text-sm text-red-600">
         {{ createError }}
       </p>
     </form>
 
-    <div v-if="createdClient" class="secret-box">
+    <div v-if="createdClient" class="mt-4 rounded-lg border border-amber-400 bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
       <p>
         Client created. Copy the secret now — it will not be shown again.
       </p>
@@ -34,38 +35,45 @@
       </p>
     </div>
 
-    <p v-if="pending">Loading clients...</p>
+    <p v-if="pending" class="text-sm text-gray-500">Loading clients...</p>
 
-    <p v-else-if="error">
+    <p v-else-if="error" class="text-sm text-red-600">
       {{ error }}
     </p>
 
-    <table v-else>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Client ID</th>
-          <th>Created</th>
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="client in clients" :key="client.id">
-          <td>{{ client.name }}</td>
-          <td>{{ client.id }}</td>
-          <td>{{ new Date(client.created_at).toLocaleDateString() }}</td>
-          <td>
-            <button
-                type="button"
-                :disabled="acting === client.id"
-                @click="deleteClient(client.id)"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="overflow-x-auto rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <th class="px-4 py-3">Name</th>
+            <th class="px-4 py-3">Client ID</th>
+            <th class="px-4 py-3">Created</th>
+            <th class="px-4 py-3" />
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="client in clients" :key="client.id" class="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+            <td class="px-4 py-3 font-medium text-gray-900">{{ client.name }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ client.id }}</td>
+            <td class="px-4 py-3 text-gray-600">{{ new Date(client.created_at).toLocaleDateString() }}</td>
+            <td class="px-4 py-3">
+              <button
+                  type="button"
+                  :disabled="acting === client.id"
+                  @click="deleteClient(client.id)"
+                  class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p v-if="actionError" class="mt-4 text-sm text-red-600">
+      {{ actionError }}
+    </p>
   </main>
 </template>
 
