@@ -193,10 +193,16 @@ async function login() {
     
     await navigateTo('/tasks')
   } catch (err: any) {
-    error.value =
-        err?.data?.error_description ??
-        err?.data?.message ??
-        'Invalid email or password.'
+    if (!err?.response) {
+        error.value = 'Unable to reach the server. Please check your connection.'
+    } else if (err.response.status >= 500) {
+        error.value = 'Server error. Please try again later.'
+    } else {
+        error.value =
+            err?.data?.error_description ??
+            err?.data?.message ??
+            'Invalid email or password.'
+    }
   } finally {
     pending.value = false
   }
