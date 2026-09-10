@@ -8,6 +8,7 @@ use Laravel\Passport\Client;
 use Laravel\Passport\RefreshToken;
 use Laravel\Passport\Token;
 use Tests\TestCase;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class TokenExpirationTest extends TestCase
 {
@@ -246,5 +247,68 @@ class TokenExpirationTest extends TestCase
         $this->assertTrue(
             $refreshToken->expires_at->lessThan(now()->addDays(7)->addHours(1))
         );
+    }
+
+    /**
+     * A blacklisted JWT cannot be refreshed — returns 401 instead of 500.
+     */
+    public function test_jwt_refresh_rejects_blacklisted_token(): void
+    {
+        $user = User::factory()->create();
+        $token = auth('jwt')->login($user);
+
+        // Blacklist the token (simulates logout).
+        JWTAuth::setToken($token)->invalidate();
+
+        $this->travel(61)->minutes();
+        app('auth')->forgetGuards();
+
+        $this->withToken($token)
+            ->withHeader('X-Auth-Method', 'jwt')
+            ->postJson('/api/v1/jwt/refresh')
+            ->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ]);
+    }
+
+    /**
+     * When JWT_SECRET is empty, login returns 401 — not a 500.
+     */
+    public function test_jwt_login_handles_missing_secret(): void
+    {
+        User::factory()->create([
+            'email' => 'jwt-nosecret@example.com',
+            'password' => bcrypt('password123'),
+        ]);
+
+        config(['jwt.secret' => '']);
+
+        $this->postJson('/api/v1/login/jwt', [
+            'email' => 'jwt-nosecret@example.com',
+            'password' => 'password123',
+        ])->assertUnauthorized()
+            ->assertJson([
+                'success' => false,
+                'message' => 'Invalid credentials.',
+            ]);
+    }
+
+    /**
+     * Logging out with an already-invalid JWT does not throw — returns 204.
+     */
+    public function test_jwt_logout_with_already_invalid_token(): void
+    {
+        $user = User::factory()->create();
+        $token = auth('jwt')->login($user);
+
+        // Invalidate the token first.
+        JWTAuth::setToken($token)->invalidate();
+
+        $this->withToken($token)
+            ->withHeader('X-Auth-Method', 'jwt')
+            ->postJson('/api/v1/logout')
+            ->assertNoContent();
     }
 }
