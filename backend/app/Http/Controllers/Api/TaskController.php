@@ -45,6 +45,13 @@ class TaskController extends Controller
                 })
             )
             ->when(
+                $request->filled('project_id'),
+                fn ($query) => $query->where(
+                    'project_id',
+                    $request->integer('project_id')
+                )
+            )
+            ->when(
                 $user->isManager() && $this->isValidInt($request->input('user_id')),
                 fn ($query) => $query->where('user_id', (int) $request->input('user_id'))
             )

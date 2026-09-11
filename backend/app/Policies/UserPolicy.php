@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Enums\ProjectMemberRole;
+use App\Models\ProjectMember;
 use App\Models\User;
 
 class UserPolicy
@@ -14,6 +16,26 @@ class UserPolicy
     public function viewAny(User $user): bool
     {
         return $user->isManager();
+    }
+
+    /**
+     * Determine whether the user can search users (to invite them to a
+     * project). Managers, project owners, and project admins may search.
+     */
+    public function search(User $user): bool
+    {
+        if ($user->isManager()) {
+            return true;
+        }
+
+        if ($user->projects()->exists()) {
+            return true;
+        }
+
+        return ProjectMember::query()
+            ->where('user_id', $user->id)
+            ->where('role', ProjectMemberRole::Admin)
+            ->exists();
     }
 
     /**

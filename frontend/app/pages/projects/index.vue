@@ -108,13 +108,28 @@
           <div class="min-w-0 flex-1">
             <strong class="text-gray-900">{{ project.name }}</strong>
 
+            <span
+                class="ml-2 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :class="roleBadgeClass(project.role)"
+            >
+              {{ roleLabel(project.role) }}
+            </span>
+
             <span v-if="project.description" class="text-gray-600">
             — {{ project.description }}
           </span>
           </div>
 
           <div class="flex shrink-0 flex-col gap-2">
+            <NuxtLink
+                :to="`/projects/${project.id}`"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Open
+            </NuxtLink>
+
             <button
+                v-if="canEditProject(project)"
                 type="button"
                 @click="startEditing(project)"
                 class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
@@ -123,6 +138,7 @@
             </button>
 
             <button
+                v-if="canDeleteProject(project)"
                 type="button"
                 @click="deleteProject(project.id)"
                 class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
@@ -296,6 +312,30 @@ function cancelEditing() {
   editingProjectId.value = null
   updateError.value = ''
   updateValidationErrors.value = {}
+}
+
+function roleLabel(role: string): string {
+  return role.charAt(0).toUpperCase() + role.slice(1)
+}
+
+function roleBadgeClass(role: string): string {
+  if (role === 'owner' || role === 'admin') {
+    return 'bg-emerald-100 text-emerald-700'
+  }
+
+  if (role === 'editor') {
+    return 'bg-blue-100 text-blue-700'
+  }
+
+  return 'bg-gray-100 text-gray-600'
+}
+
+function canEditProject(project: Project): boolean {
+  return project.role === 'owner' || project.role === 'admin'
+}
+
+function canDeleteProject(project: Project): boolean {
+  return project.role === 'owner'
 }
 
 async function updateProject() {
