@@ -180,6 +180,30 @@
       </div>
     </div>
 
+    <div class="mb-4 flex items-center gap-3">
+      <span class="text-sm font-semibold text-gray-700">Export:</span>
+      <button
+          type="button"
+          :disabled="exporting"
+          @click="exportTasks('csv')"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        Export CSV
+      </button>
+      <button
+          type="button"
+          :disabled="exporting"
+          @click="exportTasks('json')"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        Export JSON
+      </button>
+
+      <p v-if="exportError" class="text-sm text-red-600">
+        {{ exportError }}
+      </p>
+    </div>
+
     <p v-if="pending" class="text-sm text-gray-500">Loading tasks...</p>
 
     <p v-else-if="error" class="text-sm text-red-600">
@@ -312,7 +336,7 @@ import {
   statusLabel,
 } from '~/utils/taskDisplay'
 
-const { apiFetch } = useApi()
+const { apiFetch, apiDownload } = useApi()
 const { profile, ensureProfile } = useAuth()
 
 const isManager = computed(() => profile.value?.role === 'manager')
@@ -383,6 +407,9 @@ const filters = reactive({
 const allUsers = ref<User[]>([])
 const usersError = ref('')
 
+const exporting = ref(false)
+const exportError = ref('')
+
 onMounted(async () => {
   await ensureProfile()
 
@@ -395,6 +422,50 @@ onMounted(async () => {
     await loadAllUsers()
   }
 })
+
+async function exportTasks(format: 'csv' | 'json') {
+  exporting.value = true
+  exportError.value = ''
+
+  try {
+    const params = new URLSearchParams()
+
+    if (filters.status) {
+      params.set('status', filters.status)
+    }
+
+    if (filters.priority) {
+      params.set('priority', filters.priority)
+    }
+
+    if (filters.user_id) {
+      params.set('user_id', filters.user_id)
+    }
+
+    if (filters.search.trim()) {
+      params.set('search', filters.search.trim())
+    }
+
+    if (filters.due_from) {
+      params.set('due_from', filters.due_from)
+    }
+
+    if (filters.due_to) {
+      params.set('due_to', filters.due_to)
+    }
+
+    params.set('format', format)
+
+    await apiDownload(
+        `/api/v1/tasks/export?${params.toString()}`,
+        `tasks.${format}`,
+    )
+  } catch (err: any) {
+    exportError.value = err?.data?.message ?? 'Failed to export tasks.'
+  } finally {
+    exporting.value = false
+  }
+}
 
 async function loadAllUsers() {
   usersError.value = ''

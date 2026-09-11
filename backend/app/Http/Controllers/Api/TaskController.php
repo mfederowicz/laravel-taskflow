@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\NotificationType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ExportRequest;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\TransferTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
@@ -11,12 +12,14 @@ use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Export;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Group('Tasks')]
 class TaskController extends Controller
@@ -31,57 +34,57 @@ class TaskController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $user = $request->user();
-
-        $tasks = Task::query()
-            ->with(['user', 'project'])
-            ->when(
-                ! $user->isManager(),
-                fn ($query) => $query->where(function ($subQuery) use ($user) {
-                    $subQuery->where('user_id', $user->id)
-                        ->orWhereHas('project.members', function ($members) use ($user) {
-                            $members->where('user_id', $user->id);
-                        });
-                })
-            )
-            ->when(
-                $request->filled('project_id'),
-                fn ($query) => $query->where(
-                    'project_id',
-                    $request->integer('project_id')
-                )
-            )
-            ->when(
-                $user->isManager() && $this->isValidInt($request->input('user_id')),
-                fn ($query) => $query->where('user_id', (int) $request->input('user_id'))
-            )
-            ->when(
-                $request->status,
-                fn ($query, $status) => $query->where('status', $status)
-            )
-            ->when(
-                $request->priority,
-                fn ($query, $priority) => $query->where('priority', $priority)
-            )
-            ->when(
-                trim((string) $request->string('search')),
-                fn ($query, $search) => $query->where(function ($subQuery) use ($search) {
-                    $subQuery->where('title', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%");
-                })
-            )
-            ->when(
-                $request->due_from,
-                fn ($query, $dueFrom) => $query->whereDate('due_date', '>=', $dueFrom)
-            )
-            ->when(
-                $request->due_to,
-                fn ($query, $dueTo) => $query->whereDate('due_date', '<=', $dueTo)
-            )
+        $tasks = $this->scopedTaskQuery($request)
             ->latest()
             ->paginate(10);
 
         return TaskResource::collection($tasks);
+    }
+
+    /**
+     * Export tasks as a CSV or JSON file.
+     *
+     * The export respects the same visibility scope and filters as the task
+     * index (no pagination), so the file mirrors exactly what the user can
+     * currently see. Format is chosen via `?format=csv|json` (default csv).
+     */
+    public function export(ExportRequest $request): Response
+    {
+        $format = $request->validated('format') ?? 'csv';
+
+        $tasks = $this->scopedTaskQuery($request)
+            ->latest()
+            ->get();
+
+        if ($format === 'json') {
+            return response()->json(
+                ['data' => TaskResource::collection($tasks)->resolve()],
+                200,
+                ['Content-Disposition' => 'attachment; filename="tasks.json"']
+            );
+        }
+
+        $rows = $tasks->map(fn (Task $task) => [
+            $task->id,
+            $task->title,
+            $task->description,
+            $task->status,
+            $task->priority,
+            $task->due_date,
+            $task->project?->name,
+            $task->user->name,
+            $task->created_at?->toDateTimeString(),
+            $task->updated_at?->toDateTimeString(),
+        ]);
+
+        $csv = Export::csv([
+            'id', 'title', 'description', 'status', 'priority', 'due_date',
+            'project', 'owner', 'created_at', 'updated_at',
+        ], $rows);
+
+        return response($csv, 200)
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="tasks.csv"');
     }
 
     /**
@@ -213,6 +216,63 @@ class TaskController extends Controller
             && in_array(
                 'history',
                 array_map('trim', explode(',', (string) $request->string('with')))
+            );
+    }
+
+    /**
+     * Build the user-scoped, filterable task query shared by the index and
+     * the export. Regular users see their own tasks plus tasks in projects
+     * they belong to; managers see every task (optionally one owner via
+     * `user_id`).
+     */
+    private function scopedTaskQuery(Request $request): Builder
+    {
+        $user = $request->user();
+
+        return Task::query()
+            ->with(['user', 'project'])
+            ->when(
+                ! $user->isManager(),
+                fn ($query) => $query->where(function ($subQuery) use ($user) {
+                    $subQuery->where('user_id', $user->id)
+                        ->orWhereHas('project.members', function ($members) use ($user) {
+                            $members->where('user_id', $user->id);
+                        });
+                })
+            )
+            ->when(
+                $request->filled('project_id'),
+                fn ($query) => $query->where(
+                    'project_id',
+                    $request->integer('project_id')
+                )
+            )
+            ->when(
+                $user->isManager() && $this->isValidInt($request->input('user_id')),
+                fn ($query) => $query->where('user_id', (int) $request->input('user_id'))
+            )
+            ->when(
+                $request->status,
+                fn ($query, $status) => $query->where('status', $status)
+            )
+            ->when(
+                $request->priority,
+                fn ($query, $priority) => $query->where('priority', $priority)
+            )
+            ->when(
+                trim((string) $request->string('search')),
+                fn ($query, $search) => $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%");
+                })
+            )
+            ->when(
+                $request->due_from,
+                fn ($query, $dueFrom) => $query->whereDate('due_date', '>=', $dueFrom)
+            )
+            ->when(
+                $request->due_to,
+                fn ($query, $dueTo) => $query->whereDate('due_date', '<=', $dueTo)
             );
     }
 
