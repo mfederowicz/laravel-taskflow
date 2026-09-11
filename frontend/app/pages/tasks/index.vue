@@ -21,15 +21,6 @@
     </p>
 
     <form v-if="showCreateForm" @submit.prevent="createTask" class="relative mb-6 mt-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-      <button
-          type="button"
-          :aria-label="'Hide form'"
-          :title="'Hide form'"
-          @click="closeCreateForm"
-          class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold leading-none text-gray-500 hover:bg-gray-50"
-      >
-        ✕
-      </button>
       <div class="mb-4">
         <label for="project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
@@ -161,9 +152,20 @@
         </div>
       </div>
 
-      <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
-        {{ creating ? 'Creating...' : 'Create task' }}
-      </button>
+      <div class="flex items-center gap-3">
+        <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+          {{ creating ? 'Creating...' : 'Create task' }}
+        </button>
+
+        <button
+            type="button"
+            :disabled="creating"
+            @click="closeCreateForm"
+            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+        >
+          Hide form
+        </button>
+      </div>
 
       <p v-if="createError" class="mt-3 text-sm text-red-600">
         {{ createError }}
