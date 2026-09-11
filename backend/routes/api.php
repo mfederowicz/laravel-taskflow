@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectMemberController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
@@ -75,6 +76,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/projects/{project}', [ProjectController::class, 'show']);
         Route::put('/projects/{project}', [ProjectController::class, 'update']);
         Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+
+        // Project members
+        Route::get('/projects/{project}/members', [ProjectMemberController::class, 'index']);
+        Route::post('/projects/{project}/members', [ProjectMemberController::class, 'store']);
+        Route::patch('/projects/{project}/members/{member}', [ProjectMemberController::class, 'update'])->scopeBindings();
+        Route::delete('/projects/{project}/members/{member}', [ProjectMemberController::class, 'destroy'])->scopeBindings();
 
         // Comments
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);

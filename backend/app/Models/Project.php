@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProjectMemberRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,5 +26,31 @@ class Project extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(Task::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(ProjectMember::class);
+    }
+
+    public function hasMember(User $user): bool
+    {
+        return $this->members()
+            ->where('user_id', $user->id)
+            ->exists();
+    }
+
+    public function getMemberRole(User $user): ?ProjectMemberRole
+    {
+        $member = $this->members()
+            ->where('user_id', $user->id)
+            ->first();
+
+        return $member?->role;
+    }
+
+    public function isMemberAdmin(User $user): bool
+    {
+        return $this->getMemberRole($user) === ProjectMemberRole::Admin;
     }
 }
