@@ -49,6 +49,7 @@ Route::prefix('v1')->group(function () {
                 'data' => $request->user(),
             ]);
         });
+        Route::put('/user/password', [AuthController::class, 'updateOwnPassword']);
 
         // Users (manager only; search for project invitations)
         Route::get('/users', [UserController::class, 'index']);
