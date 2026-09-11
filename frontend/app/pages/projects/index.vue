@@ -41,6 +41,30 @@
       </p>
     </form>
 
+    <div class="mb-4 flex items-center gap-3">
+      <span class="text-sm font-semibold text-gray-700">Export:</span>
+      <button
+          type="button"
+          :disabled="exporting"
+          @click="exportProjects('csv')"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        Export CSV
+      </button>
+      <button
+          type="button"
+          :disabled="exporting"
+          @click="exportProjects('json')"
+          class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        Export JSON
+      </button>
+
+      <p v-if="exportError" class="text-sm text-red-600">
+        {{ exportError }}
+      </p>
+    </div>
+
     <p v-if="pending" class="text-sm text-gray-500">
       Loading projects...
     </p>
@@ -191,7 +215,7 @@ import type {
   ProjectsResponse,
 } from '~/types/project'
 
-const { apiFetch } = useApi()
+const { apiFetch, apiDownload } = useApi()
 
 const projects = ref<Project[]>([])
 const pending = ref(true)
@@ -220,6 +244,9 @@ const updating = ref(false)
 const updateError = ref('')
 const updateValidationErrors = ref<Record<string, string[]>>({})
 
+const exporting = ref(false)
+const exportError = ref('')
+
 onMounted(async () => {
   await loadProjects()
 })
@@ -244,6 +271,22 @@ async function loadProjects() {
     error.value = err?.data?.message ?? 'Failed to load projects.'
   } finally {
     pending.value = false
+  }
+}
+
+async function exportProjects(format: 'csv' | 'json') {
+  exporting.value = true
+  exportError.value = ''
+
+  try {
+    await apiDownload(
+        `/api/v1/projects/export?format=${format}`,
+        `projects.${format}`,
+    )
+  } catch (err: any) {
+    exportError.value = err?.data?.message ?? 'Failed to export projects.'
+  } finally {
+    exporting.value = false
   }
 }
 

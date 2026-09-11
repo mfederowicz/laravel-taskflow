@@ -67,6 +67,7 @@ Route::prefix('v1')->group(function () {
 
         // Tasks
         Route::get('/tasks', [TaskController::class, 'index']);
+        Route::get('/tasks/export', [TaskController::class, 'export']);
         Route::post('/tasks', [TaskController::class, 'store']);
         Route::get('/tasks/{task}', [TaskController::class, 'show']);
         Route::put('/tasks/{task}', [TaskController::class, 'update']);
@@ -75,6 +76,7 @@ Route::prefix('v1')->group(function () {
 
         // Projects
         Route::get('/projects', [ProjectController::class, 'index']);
+        Route::get('/projects/export', [ProjectController::class, 'export']);
         Route::post('/projects', [ProjectController::class, 'store']);
         Route::get('/projects/{project}', [ProjectController::class, 'show']);
         Route::put('/projects/{project}', [ProjectController::class, 'update']);

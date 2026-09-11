@@ -85,7 +85,98 @@ function useApi() {
         }
     }
 
-    return { apiFetch }
+    /**
+     * Download a file response (CSV/JSON export) with the auth headers,
+     * retrying once on 401 after a successful token refresh.
+     */
+    async function apiDownload(
+        url: string,
+        filename: string,
+        options: { headers?: Record<string, string> } = {},
+    ): Promise<void> {
+        const headers: Record<string, string> = {
+            Accept: 'application/json',
+            'X-Auth-Method': authMethod.value || 'sanctum',
+            ...(options.headers ?? {}),
+        }
+
+        const token = getToken()
+
+        if (token) {
+            headers.Authorization = `Bearer ${token}`
+        }
+
+        async function fetchBlob(overrideToken?: string): Promise<Blob> {
+            const downloadHeaders = { ...headers }
+
+            if (overrideToken) {
+                downloadHeaders.Authorization = `Bearer ${overrideToken}`
+            }
+
+            return $fetch<Blob>(url, {
+                ...options,
+                headers: downloadHeaders,
+                responseType: 'blob',
+            })
+        }
+
+        let blob: Blob
+
+        try {
+            blob = await fetchBlob()
+        } catch (error: any) {
+            if (import.meta.client && error?.response?.status === 403 && error?.data?.message === 'Account is locked.') {
+                clearAuth()
+                navigateTo('/login?locked=1')
+                throw error
+            }
+
+            if (import.meta.client && error?.response?.status === 401) {
+                const result = await refreshAccessToken()
+
+                if (result.locked) {
+                    clearAuth()
+                    navigateTo('/login?locked=1')
+                    throw error
+                }
+
+                if (result.ok) {
+                    const newToken = getToken()
+
+                    if (!newToken) {
+                        clearAuth()
+                        navigateTo('/login')
+                        throw error
+                    }
+
+                    try {
+                        blob = await fetchBlob(newToken)
+                    } catch (retryError: any) {
+                        if (import.meta.client && retryError?.response?.status === 401) {
+                            clearAuth()
+                            navigateTo('/login')
+                        }
+                        throw retryError
+                    }
+                } else {
+                    throw error
+                }
+            } else {
+                throw error
+            }
+        }
+
+        const objectUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = objectUrl
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 0)
+    }
+
+    return { apiFetch, apiDownload }
 }
 
 export default useApi

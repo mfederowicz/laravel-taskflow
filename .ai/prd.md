@@ -120,14 +120,16 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 ## Future Roadmap
 
-- Teams/orgs beyond per-project membership — planned for the near future.
+Ordered by implementation simplicity (easiest first).
+
+- CSV / JSON export of tasks and projects.
 - Tags / labels for tasks with filtering.
+- Project archiving (soft "archived" flag).
+- Activity feed / audit log per project.
+- Calendar / agenda view of due dates.
 - Recurring tasks (frequency column; regenerated on completion).
 - Task assignment to project members.
-- Project archiving (soft "archived" flag).
-- CSV / JSON export of tasks and projects.
 - Forgot-password / password reset via security question.
-- Calendar / agenda view of due dates.
-- Activity feed / audit log per project.
+- Teams/orgs beyond per-project membership — planned for the near future.
 - Passkeys (passwordless WebAuthn login).
 - Personal API tokens (user-owned, not tied to an OAuth client) — maybe someday.
