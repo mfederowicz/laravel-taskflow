@@ -18,6 +18,10 @@
         </div>
       </div>
 
+      <p v-if="truncated" class="mt-4 text-xs text-gray-500">
+        Showing the first 1000 tasks and projects; totals are exact for smaller accounts.
+      </p>
+
       <div class="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900">Coming up</h2>
@@ -66,6 +70,10 @@ const loading = ref(true)
 const error = ref('')
 const tasks = ref<Task[]>([])
 const projectCount = ref(0)
+const truncated = ref(false)
+
+const TASK_CAP = 1000
+const PROJECT_CAP = 1000
 
 const DUE_SOON_DAYS = 3
 
@@ -132,7 +140,9 @@ async function fetchAllTasks(): Promise<Task[]> {
     all.push(...response.data)
     lastPage = response.meta.last_page
     page++
-  } while (page <= lastPage && all.length < 500)
+  } while (page <= lastPage && all.length < TASK_CAP)
+
+  truncated.value = page <= lastPage
 
   return all
 }
@@ -147,7 +157,9 @@ async function fetchProjectCount(): Promise<number> {
     count += response.data.length
     lastPage = response.meta?.last_page ?? 1
     page++
-  } while (page <= lastPage && count < 500)
+  } while (page <= lastPage && count < PROJECT_CAP)
+
+  truncated.value = truncated.value || page <= lastPage
 
   return count
 }

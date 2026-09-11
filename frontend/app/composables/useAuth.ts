@@ -103,17 +103,19 @@ function useAuth() {
         return profile.value
     }
 
-    async function ensureProfile(): Promise<User | null> {
+    async function ensureProfile(options: {
+        refresh?: boolean
+    } = {}): Promise<User | null> {
         const local = getProfile()
 
-        if (local) {
+        if (local && !options.refresh) {
             return local
         }
 
         const currentToken = getToken()
 
         if (!currentToken) {
-            return null
+            return local
         }
 
         try {
