@@ -67,7 +67,7 @@ See `.ai/auth-spec.md` for the full contract.
 
 ## API calls
 
-All requests go through `useApi()` (`app/composables/useApi.ts`), which wraps `$fetch` and injects the headers above. Deep links pages:
+All requests go through `useApi()` (`app/composables/useApi.ts`), which wraps `$fetch` and injects the headers above. The notification bell in `AppNav.vue` uses `useNotifications()` (`app/composables/useNotifications.ts`) and polls the unread count every 60s. Deep links pages:
 
 - `/` — landing
 - `/login` — sign in

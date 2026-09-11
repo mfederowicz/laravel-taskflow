@@ -36,6 +36,11 @@ class Task extends Model
         return $this->hasMany(Comment::class);
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     public function ownershipHistories(): HasMany
     {
         return $this->hasMany(TaskOwnershipHistory::class);
