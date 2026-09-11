@@ -31,7 +31,7 @@
           type="button"
           class="relative rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
           aria-label="Notifications"
-          @click="notificationOpen = !notificationOpen"
+          @click="toggleNotification"
       >
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path
@@ -123,16 +123,59 @@
       </div>
     </div>
 
-    <button type="button" @click="handleLogout">
-      Logout
-    </button>
+    <div class="relative">
+      <button
+          type="button"
+          class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+          aria-label="Account"
+          @click="toggleUserMenu"
+      >
+        <span
+            class="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white"
+        >
+          {{ initials(profile?.name) || '?' }}
+        </span>
+        <span class="font-medium">{{ profile?.name }}</span>
+        <span v-if="profile" class="text-xs text-gray-400">&#9662;</span>
+      </button>
+
+      <div v-if="userMenuOpen" class="absolute right-0 z-50 mt-2 w-64 rounded-xl bg-white shadow-lg ring-1 ring-gray-200">
+        <div v-if="profile" class="border-b border-gray-100 px-4 py-3">
+          <p class="text-sm font-semibold text-gray-900">
+            {{ profile.name }}
+          </p>
+          <p class="text-sm text-gray-500">
+            {{ profile.email }}
+          </p>
+
+          <div class="mt-2 flex flex-wrap gap-1">
+            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              {{ profile.role === 'manager' ? 'Manager' : 'User' }}
+            </span>
+            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+              {{ authMethod }}
+            </span>
+          </div>
+        </div>
+
+        <div class="px-4 py-3">
+          <button
+              type="button"
+              class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              @click="handleLogout"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
   </nav>
 </template>
 
 <script setup lang="ts">
 import type { NotificationItem } from '~/types/notification'
 
-const { logout, getToken, ensureProfile, profile } = useAuth()
+const { logout, getToken, ensureProfile, profile, authMethod } = useAuth()
 const {
     notifications,
     unread,
@@ -149,6 +192,7 @@ const {
 
 const isManager = computed(() => profile.value?.role === 'manager')
 const notificationOpen = ref(false)
+const userMenuOpen = ref(false)
 const hasReadNotifications = computed(() =>
     notifications.value.some((n) => n.read_at)
 )
@@ -185,6 +229,29 @@ async function handleClearRead() {
 
 async function handleRemove(id: number) {
   await remove(id)
+}
+
+function toggleNotification() {
+    userMenuOpen.value = false
+    notificationOpen.value = !notificationOpen.value
+}
+
+function toggleUserMenu() {
+    notificationOpen.value = false
+    userMenuOpen.value = !userMenuOpen.value
+}
+
+function initials(name: string | undefined): string {
+    if (!name) {
+        return ''
+    }
+
+    return name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
 }
 
 async function handleLogout() {
