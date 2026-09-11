@@ -2,28 +2,26 @@
 
 ## Overview
 
-TaskFlow is a lightweight full-stack task management application. It lets users organize their work into **projects**, manage **tasks** within them, and discuss tasks via **comments**.
-
-The product is intentionally simple: a single-user-per-resource ownership model (no team collaboration), a REST API, and a minimal Nuxt client.
+TaskFlow is a lightweight full-stack task management application. It lets users organize their work into **projects**, manage **tasks** within them, and discuss tasks via **comments**. Users can share projects with others (member roles: admin / editor / viewer), transfer task ownership, and receive in-app notifications when tasks fall due or run overdue.
 
 ## Goals
 
 - Provide a simple, self-hostable task management tool.
 - Demonstrate a multi-strategy authentication API (Sanctum, JWT, OAuth2/Passport) in one backend.
 - Keep the API clean and idiomatic Laravel: thin controllers, policies for authorization, Form Requests for validation, Resources for responses.
-- Support a minimal UI that covers the core flows (login, list/create tasks, list/create projects).
+- Cover the core flows in a minimal Nuxt UI: login, dashboard, tasks, projects (with membership management), notifications, and manager administration.
 
 ## Non-Goals
 
-- No teams, shared projects, or multi-user collaboration (beyond task ownership transfer).
-- No real-time push/notifications.
+- No teams/orgs beyond per-project membership — collaboration is scoped to projects users join.
+- No real-time push — notifications are in-app only, delivered via 60s polling.
 - No file attachments — TaskFlow stores only task metadata in database tables.
 - No admin panel / Blade views (API-only backend).
 
 ## Users & Personas
 
-- **Individual user**: signs up / signs in, creates personal projects and tasks, comments on tasks.
-- **API consumer / frontend**: calls the REST API using one of three auth methods.
+- **User**: signs up / signs in, creates personal projects and tasks, comments on tasks, joins shared projects, receives due-date notifications.
+- **Manager**: in addition to user capabilities, administers accounts (lock/unlock, roles, password reset), manages OAuth clients, and can transfer task ownership.
 
 ## User Stories
 
@@ -31,7 +29,12 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 2. As a user, I can create, view, update, and delete my own projects.
 3. As a user, I can create, view, update, and delete tasks (optionally assigned to one of my projects).
 4. As a user, I can add comments to my tasks and list existing comments.
-5. As a user, I can restrict access so that only I can see or modify my resources.
+5. As a user, I can restrict access so that only the people I share a project with can see or modify my resources.
+6. As a user, I can share a project with other users and grant them admin/editor/viewer roles.
+7. As a user, I receive in-app notifications when my tasks fall due or run overdue, and I can dismiss them.
+8. As a manager, I can transfer a task's ownership to another user and review its ownership history.
+9. As a manager, I can lock/unlock accounts, change roles, reset passwords, and manage OAuth clients.
+10. As a user, I can see which account I'm logged in as (name, role, auth method) and log out from the nav bar.
 
 ## Functional Requirements
 
@@ -40,43 +43,67 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 - `POST /api/v1/register` — create account; returns a Sanctum token.
 - `POST /api/v1/login` — Sanctum login (email + password) → token.
 - `POST /api/v1/login/jwt` — JWT login → bearer token.
-- `GET /api/v1/oauth/client` — create/return a password-grant Passport client (dev convenience).
 - `POST /api/v1/oauth/token` — Passport OAuth2 password grant (native endpoint).
 - `POST /api/v1/logout` — revoke token for the active auth method.
 - `GET /api/v1/user` — return the authenticated user.
+- Refresh endpoints (public, throttled): `POST /api/v1/sanctum/refresh` and `POST /api/v1/jwt/refresh`; Passport refreshes via the OAuth2 refresh grant.
+- Uniform token policy: 60-minute access tokens, 7-day refresh window — env-driven lifetimes.
 - The auth method used by a request is declared via the `X-Auth-Method` header (`sanctum` default, `jwt`, or `passport`) and enforced by the `auth.multi` middleware.
+- Locked accounts are blocked from login/refresh and from all API calls.
 
-### Projects
+### Projects & membership
 
 - `GET /api/v1/projects`, `GET /api/v1/projects/{project}`
 - `POST /api/v1/projects`
 - `PUT /api/v1/projects/{project}` / `PATCH`
 - `DELETE /api/v1/projects/{project}`
 - Fields: `name` (required), `description` (nullable).
-- Ownership enforced by `ProjectPolicy` (owner-only view/update/delete).
+- Members: `GET/POST/PATCH/DELETE /api/v1/projects/{project}/members` — roster visible to owner + members; add/update/remove for the owner or a project admin. Roles: `admin` / `editor` / `viewer`.
+- Access: the project index includes owned + joined projects. Owner and members can view; the owner or an admin can update/delete.
 
 ### Tasks
 
-- `GET /api/v1/tasks`, `GET /api/v1/tasks/{task}`
+- `GET /api/v1/tasks` (own + shared-project tasks; filters: `search`, `due_from`, `due_to`, `project_id`, `user_id` for managers), `GET /api/v1/tasks/{task}`
 - `POST /api/v1/tasks`, `PUT /api/v1/tasks/{task}`, `DELETE /api/v1/tasks/{task}`
+- `POST /api/v1/tasks/{task}/transfer` — manager-only ownership transfer; every transfer is recorded in the task's ownership history.
 - Fields: `title` (required), `description`, `status` (`pending` default), `priority` (`medium` default), `due_date`, optional `project_id`.
-- Ownership enforced by `TaskPolicy` (owner-only view/update/delete).
+- Access is member-role aware: **view** for the owner, manager, or any project member; **update/comment** for the owner, manager, or a project admin/editor; **delete** for the owner, manager, or a project admin. Creating a task is scoped to owned + admin/editor projects.
 
 ### Comments
 
-- `GET /api/v1/tasks/{task}/comments`
+- `GET /api/v1/tasks/{task}/comments`, `GET /api/v1/tasks/{task}/comments/{comment}`
 - `POST /api/v1/tasks/{task}/comments`
-- `GET /api/v1/tasks/{task}/comments/{comment}`
 - `PUT /api/v1/tasks/{task}/comments/{comment}`
 - `DELETE /api/v1/tasks/{task}/comments/{comment}`
 - Fields: `body` (required); `task_id` and `user_id` set server-side.
-- Comments are nested under tasks; only the comment author can update/delete (`CommentPolicy`).
+- Access: only the author can **update**; **view** is allowed for the author, the task owner, or any project member; **delete** for the author, the task owner, or a project admin.
+
+### Notifications
+
+- `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`
+- `PATCH /api/v1/notifications/{notification}/read`, `POST /api/v1/notifications/read-all`
+- `DELETE /api/v1/notifications/{notification}`, `POST /api/v1/notifications/clear-read`
+- In-app due-date reminders (`task_due` / `task_overdue`) generated hourly by the `notifications:send-due` scheduler (idempotent, locked/completed users skipped); completing a task clears its reminders; read notifications older than the retention window are pruned daily; notifications are owner-scoped.
+
+### User administration (manager-only)
+
+- `GET /api/v1/users`, `GET /api/v1/users/search`
+- `POST /api/v1/users/{user}/lock`, `POST /api/v1/users/{user}/unlock`
+- `PATCH /api/v1/users/{user}/role`
+- `PUT /api/v1/users/{user}/password`
+- Locking a user revokes their tokens and blocks login; a manager cannot lock themselves or change their own role.
+
+### OAuth client management (manager-only)
+
+- `GET /api/v1/oauth/clients`
+- `POST /api/v1/oauth/clients` — creates a password-grant client; the plain secret is shown once.
+- `DELETE /api/v1/oauth/clients/{client}`
 
 ### Frontend (client)
 
-- Pages: index, login, tasks, projects.
-- Persists token + auth method in `localStorage`.
-- Switches auth method at login time (Sanctum / JWT / Passport via OAuth2 password grant).
+- Pages: dashboard (stat cards + "Coming up"), login, tasks (search/filters, due badges, ownership history), projects (list + per-project detail with member roster and task overview), users, oauth.
+- Persists token + auth method in `localStorage`; expired tokens auto-refresh via the relevant refresh endpoint (single-flight, retry-safe).
+- Nav shows the logged-in account (initial avatar, name, role + auth-method badges, logout) and a notification bell with an unread badge (60s polling).
 
 ## Non-Functional Requirements
 
@@ -88,4 +115,7 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 
 ## Out of Scope / Future Ideas
 
-- Teams / shared projects / permissions matrix.
+- File attachments.
+- Account self-service: profile editing and change-own-password (only manager reset exists today).
+- Real-time push notifications (WebSockets).
+- Teams/orgs beyond per-project membership.
