@@ -1,23 +1,35 @@
 <template>
   <AppNav />
   <main>
-    <h1 class="mt-0 text-2xl font-bold text-gray-900">{{ isManager ? 'All Tasks' : 'My Tasks' }}</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="mt-0 text-2xl font-bold text-gray-900">{{ isManager ? 'All Tasks' : 'My Tasks' }}</h1>
 
-    <div class="mt-4 flex items-center gap-3">
       <button
+          v-if="!showCreateForm"
           type="button"
-          @click="toggleCreateForm"
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          :aria-label="'Add task'"
+          :title="'Add task'"
+          @click="openCreateForm"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-2xl font-semibold leading-none text-white hover:bg-blue-700"
       >
-        {{ showCreateForm ? 'Hide form' : '+ Add task' }}
+        +
       </button>
-
-      <p v-if="createSuccess" class="rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-800">
-        ✓ Task created: {{ createSuccess }}
-      </p>
     </div>
 
-    <form v-if="showCreateForm" @submit.prevent="createTask" class="mb-6 mt-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+    <p v-if="createSuccess" class="mt-4 rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-800">
+      ✓ Task created: {{ createSuccess }}
+    </p>
+
+    <form v-if="showCreateForm" @submit.prevent="createTask" class="relative mb-6 mt-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <button
+          type="button"
+          :aria-label="'Hide form'"
+          :title="'Hide form'"
+          @click="closeCreateForm"
+          class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 bg-white text-base font-semibold leading-none text-gray-500 hover:bg-gray-50"
+      >
+        ✕
+      </button>
       <div class="mb-4">
         <label for="project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
@@ -460,7 +472,7 @@ const error = ref('')
 const creating = ref(false)
 const createError = ref('')
 const createSuccess = ref('')
-const showCreateForm = ref(true)
+const showCreateForm = ref(false)
 const validationErrors = ref<Record<string, string[]>>({})
 
 const currentPage = ref(1)
@@ -511,8 +523,13 @@ onMounted(async () => {
   }
 })
 
-function toggleCreateForm() {
-  showCreateForm.value = !showCreateForm.value
+function openCreateForm() {
+  showCreateForm.value = true
+  createSuccess.value = ''
+}
+
+function closeCreateForm() {
+  showCreateForm.value = false
   createSuccess.value = ''
 }
 
