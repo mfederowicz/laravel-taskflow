@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\UpdateOwnPasswordRequest;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -230,6 +231,29 @@ class AuthController extends Controller
         }
 
         return response()->noContent();
+    }
+
+    /**
+     * Change the authenticated user's password.
+     *
+     * Verifies the current password before persisting the new one. Bearer
+     * tokens are not tied to the password, so existing sessions stay valid.
+     */
+    public function updateOwnPassword(UpdateOwnPasswordRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! Hash::check($request->validated('current_password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['The current password is incorrect.'],
+            ]);
+        }
+
+        $user->update(['password' => $request->validated('password')]);
+
+        return response()->json([
+            'data' => $user->fresh(),
+        ]);
     }
 
     /**

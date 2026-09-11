@@ -140,33 +140,121 @@
       </button>
 
       <div v-if="userMenuOpen" class="absolute right-0 z-50 mt-2 w-64 rounded-xl bg-white shadow-lg ring-1 ring-gray-200">
-        <div v-if="profile" class="border-b border-gray-100 px-4 py-3">
-          <p class="text-sm font-semibold text-gray-900">
-            {{ profile.name }}
-          </p>
-          <p class="text-sm text-gray-500">
-            {{ profile.email }}
+        <template v-if="passwordPanelOpen">
+          <p class="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">
+            Change password
           </p>
 
-          <div class="mt-2 flex flex-wrap gap-1">
-            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
-              {{ profile.role === 'manager' ? 'Manager' : 'User' }}
-            </span>
-            <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
-              {{ authMethod }}
-            </span>
+          <form class="space-y-3 px-4 py-3" @submit.prevent="submitChangePassword">
+            <div>
+              <label for="current-password" class="mb-1 block text-sm font-semibold text-gray-700">
+                Current password
+              </label>
+              <input
+                  id="current-password"
+                  v-model="passwordForm.current_password"
+                  type="password"
+                  required
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+              <p v-if="passwordValidationErrors.current_password" class="mt-1 text-xs text-red-600">
+                {{ passwordValidationErrors.current_password[0] }}
+              </p>
+            </div>
+
+            <div>
+              <label for="new-password" class="mb-1 block text-sm font-semibold text-gray-700">
+                New password
+              </label>
+              <input
+                  id="new-password"
+                  v-model="passwordForm.password"
+                  type="password"
+                  required
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+              <p v-if="passwordValidationErrors.password" class="mt-1 text-xs text-red-600">
+                {{ passwordValidationErrors.password[0] }}
+              </p>
+            </div>
+
+            <div>
+              <label for="confirm-password" class="mb-1 block text-sm font-semibold text-gray-700">
+                Confirm new password
+              </label>
+              <input
+                  id="confirm-password"
+                  v-model="passwordForm.password_confirmation"
+                  type="password"
+                  required
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              >
+            </div>
+
+            <p v-if="passwordSuccessMessage" class="text-sm text-green-600">
+              {{ passwordSuccessMessage }}
+            </p>
+
+            <p v-if="passwordError" class="text-sm text-red-600">
+              {{ passwordError }}
+            </p>
+
+            <div class="flex gap-2">
+              <button
+                  type="submit"
+                  :disabled="passwordSaving"
+                  class="grow rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {{ passwordSaving ? 'Saving...' : 'Save password' }}
+              </button>
+              <button
+                  type="button"
+                  :disabled="passwordSaving"
+                  class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  @click="closePasswordPanel"
+              >
+                Back
+              </button>
+            </div>
+          </form>
+        </template>
+
+        <template v-else>
+          <div v-if="profile" class="border-b border-gray-100 px-4 py-3">
+            <p class="text-sm font-semibold text-gray-900">
+              {{ profile.name }}
+            </p>
+            <p class="text-sm text-gray-500">
+              {{ profile.email }}
+            </p>
+
+            <div class="mt-2 flex flex-wrap gap-1">
+              <span class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                {{ profile.role === 'manager' ? 'Manager' : 'User' }}
+              </span>
+              <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                {{ authMethod }}
+              </span>
+            </div>
           </div>
-        </div>
 
-        <div class="px-4 py-3">
-          <button
-              type="button"
-              class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-              @click="handleLogout"
-          >
-            Logout
-          </button>
-        </div>
+          <div class="px-4 py-3">
+            <button
+                type="button"
+                class="mb-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                @click="openPasswordPanel"
+            >
+              Change password
+            </button>
+            <button
+                type="button"
+                class="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                @click="handleLogout"
+            >
+              Logout
+            </button>
+          </div>
+        </template>
       </div>
     </div>
   </nav>
@@ -176,6 +264,7 @@
 import type { NotificationItem } from '~/types/notification'
 
 const { logout, getToken, ensureProfile, profile, authMethod } = useAuth()
+const { apiFetch } = useApi()
 const {
     notifications,
     unread,
@@ -239,6 +328,10 @@ function toggleNotification() {
 function toggleUserMenu() {
     notificationOpen.value = false
     userMenuOpen.value = !userMenuOpen.value
+
+    if (!userMenuOpen.value) {
+        closePasswordPanel()
+    }
 }
 
 function initials(name: string | undefined): string {
@@ -252,6 +345,62 @@ function initials(name: string | undefined): string {
         .join('')
         .slice(0, 2)
         .toUpperCase()
+}
+
+const passwordPanelOpen = ref(false)
+const passwordSaving = ref(false)
+const passwordError = ref('')
+const passwordSuccessMessage = ref('')
+const passwordValidationErrors = ref<Record<string, string[]>>({})
+const passwordForm = reactive({
+    current_password: '',
+    password: '',
+    password_confirmation: '',
+})
+
+function openPasswordPanel() {
+    passwordPanelOpen.value = true
+    passwordError.value = ''
+    passwordSuccessMessage.value = ''
+    passwordValidationErrors.value = {}
+    passwordForm.current_password = ''
+    passwordForm.password = ''
+    passwordForm.password_confirmation = ''
+}
+
+function closePasswordPanel() {
+    passwordPanelOpen.value = false
+    passwordError.value = ''
+    passwordSuccessMessage.value = ''
+    passwordValidationErrors.value = {}
+}
+
+async function submitChangePassword() {
+    passwordSaving.value = true
+    passwordError.value = ''
+    passwordSuccessMessage.value = ''
+    passwordValidationErrors.value = {}
+
+    try {
+        await apiFetch('/api/v1/user/password', {
+            method: 'PUT',
+            body: { ...passwordForm },
+        })
+
+        passwordSuccessMessage.value = 'Password changed.'
+        passwordForm.current_password = ''
+        passwordForm.password = ''
+        passwordForm.password_confirmation = ''
+    } catch (err: any) {
+        if (err?.status === 422 && err?.data?.errors) {
+            passwordValidationErrors.value = err.data.errors
+        } else {
+            passwordError.value =
+                err?.data?.message ?? 'Failed to change password.'
+        }
+    } finally {
+        passwordSaving.value = false
+    }
 }
 
 async function handleLogout() {
