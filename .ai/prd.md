@@ -15,9 +15,9 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 
 ## Non-Goals
 
-- No teams, organizations, roles, or shared projects.
+- No teams, shared projects, or multi-user collaboration (beyond task ownership transfer).
 - No real-time push/notifications.
-- No file attachments.
+- No file attachments — TaskFlow stores only task metadata in database tables.
 - No admin panel / Blade views (API-only backend).
 
 ## Users & Personas
@@ -88,7 +88,4 @@ The product is intentionally simple: a single-user-per-resource ownership model 
 
 ## Out of Scope / Future Ideas
 
-- Pagination, search, filters.
 - Teams / shared projects / permissions matrix.
-- Task assignees, due-date reminders.
-- Passport client management UI.
