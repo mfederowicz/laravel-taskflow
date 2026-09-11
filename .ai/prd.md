@@ -13,9 +13,8 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 ## Non-Goals
 
-- No teams/orgs beyond per-project membership — collaboration is scoped to projects users join.
 - No real-time push — notifications are in-app only, delivered via 60s polling.
-- No file attachments — TaskFlow does not handle file uploads, storage, or media of any kind; all data (tasks, projects, comments, notifications, memberships) is stored in database tables only.
+- No file uploads or attachments — the database is the single source of truth. All data (tasks, projects, comments, notifications, memberships) lives in database tables only; there is no file storage, media, or any other data source.
 - No admin panel / Blade views (API-only backend).
 
 ## Users & Personas
@@ -50,6 +49,12 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 - Uniform token policy: 60-minute access tokens, 7-day refresh window — env-driven lifetimes.
 - The auth method used by a request is declared via the `X-Auth-Method` header (`sanctum` default, `jwt`, or `passport`) and enforced by the `auth.multi` middleware.
 - Locked accounts are blocked from login/refresh and from all API calls.
+
+### Account self-service
+
+- `PUT /api/v1/user/profile` — update own name/email (email must stay unique).
+- `PUT /api/v1/user/password` — change own password (current password verified).
+- Frontend: `/profile` page for name/email editing; change-password panel in the nav user dropdown.
 
 ### Projects & membership
 
@@ -101,7 +106,7 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 ### Frontend (client)
 
-- Pages: dashboard (stat cards + "Coming up"), login, tasks (search/filters, due badges, ownership history), projects (list + per-project detail with member roster and task overview), users, oauth.
+- Pages: dashboard (stat cards + "Coming up"), login, profile, tasks (search/filters, due badges, ownership history), projects (list + per-project detail with member roster and task overview), users, oauth.
 - Persists token + auth method in `localStorage`; expired tokens auto-refresh via the relevant refresh endpoint (single-flight, retry-safe).
 - Nav shows the logged-in account (initial avatar, name, role + auth-method badges, logout) and a notification bell with an unread badge (60s polling).
 
@@ -113,9 +118,16 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 - Everything runs via Docker Compose; single-command startup.
 - SQLite for local dev and tests (no external DB service required).
 
-## Out of Scope / Future Ideas
+## Future Roadmap
 
-- File attachments.
-- Account self-service: profile editing and change-own-password (only manager reset exists today).
-- Real-time push notifications (WebSockets).
-- Teams/orgs beyond per-project membership.
+- Teams/orgs beyond per-project membership — planned for the near future.
+- Tags / labels for tasks with filtering.
+- Recurring tasks (frequency column; regenerated on completion).
+- Task assignment to project members.
+- Project archiving (soft "archived" flag).
+- CSV / JSON export of tasks and projects.
+- Forgot-password / password reset via security question.
+- Calendar / agenda view of due dates.
+- Activity feed / audit log per project.
+- Passkeys (passwordless WebAuthn login).
+- Personal API tokens (user-owned, not tied to an OAuth client).
