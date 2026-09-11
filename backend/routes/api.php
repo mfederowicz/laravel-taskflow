@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
             ]);
         });
         Route::put('/user/password', [AuthController::class, 'updateOwnPassword']);
+        Route::put('/user/profile', [AuthController::class, 'updateOwnProfile']);
 
         // Users (manager only; search for project invitations)
         Route::get('/users', [UserController::class, 'index']);

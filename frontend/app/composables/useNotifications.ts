@@ -52,7 +52,7 @@ function useNotifications() {
                 method: 'PATCH',
             })
 
-            const item = notifications.value.find((n) => n.id === id)
+            const item = notifications.value.find((n: NotificationItem) => n.id === id)
 
             if (item) {
                 item.read_at = new Date().toISOString()
@@ -76,7 +76,7 @@ function useNotifications() {
             unread.value = 0
 
             const now = new Date().toISOString()
-            notifications.value.forEach((n) => {
+            notifications.value.forEach((n: NotificationItem) => {
                 n.read_at = now
             })
 
@@ -91,7 +91,7 @@ function useNotifications() {
         return apiFetch(`/api/v1/notifications/${id}`, {
             method: 'DELETE',
         }).then(() => {
-            const index = notifications.value.findIndex((n) => n.id === id)
+            const index = notifications.value.findIndex((n: NotificationItem) => n.id === id)
 
             if (index !== -1) {
                 const [removed] = notifications.value.splice(index, 1)
@@ -112,7 +112,7 @@ function useNotifications() {
                 { method: 'POST' },
             )
 
-            notifications.value = notifications.value.filter((n) => !n.read_at)
+            notifications.value = notifications.value.filter((n: NotificationItem) => !n.read_at)
 
             return response.data.deleted
         } catch (err: any) {
