@@ -32,12 +32,12 @@
 
         <ul v-if="comingUp.length" class="mt-4 divide-y divide-gray-100">
           <li v-for="task in comingUp" :key="task.id" class="flex items-center justify-between gap-4 py-3">
-            <div class="min-w-0">
-              <p class="truncate font-medium text-gray-900">{{ task.title }}</p>
+            <NuxtLink :to="`/tasks/${task.id}`" class="block min-w-0">
+              <p class="truncate font-medium text-gray-900 hover:text-blue-600">{{ task.title }}</p>
               <p class="mt-0.5 truncate text-sm text-gray-500">
                 {{ task.project ? task.project.name : 'No project' }}
               </p>
-            </div>
+            </NuxtLink>
             <div class="flex shrink-0 items-center gap-3">
               <span
                 class="rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -59,6 +59,7 @@
 <script setup lang="ts">
 import type { Task, TasksResponse } from '~/types/task'
 import type { ProjectsResponse } from '~/types/project'
+import { badgeClass, dueBadge } from '~/utils/taskDisplay'
 
 definePageMeta({
   middleware: 'auth',
@@ -74,61 +75,6 @@ const truncated = ref(false)
 
 const TASK_CAP = 1000
 const PROJECT_CAP = 1000
-
-const DUE_SOON_DAYS = 3
-
-function todayISO(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${now.getFullYear()}-${month}-${day}`
-}
-
-function addDaysToISO(iso: string, days: number): string {
-  const date = new Date(`${iso}T00:00:00`)
-  date.setDate(date.getDate() + days)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function dueBadge(task: Task): { label: string; type: string } | null {
-  if (!task.due_date || task.status === 'completed') {
-    return null
-  }
-
-  const today = todayISO()
-
-  if (task.due_date < today) {
-    return { label: 'Overdue', type: 'overdue' }
-  }
-
-  if (task.due_date === today) {
-    return { label: 'Due today', type: 'due-today' }
-  }
-
-  if (task.due_date <= addDaysToISO(today, DUE_SOON_DAYS)) {
-    return { label: 'Due soon', type: 'due-soon' }
-  }
-
-  return null
-}
-
-function badgeClass(task: Task): string {
-  const type = dueBadge(task)?.type
-
-  if (type === 'overdue') {
-    return 'bg-red-100 text-red-700'
-  }
-
-  if (type === 'due-today') {
-    return 'bg-amber-100 text-amber-700'
-  }
-
-  return 'bg-blue-100 text-blue-700'
-}
 
 async function fetchAllTasks(): Promise<Task[]> {
   const all: Task[] = []

@@ -503,6 +503,13 @@
           </div>
 
           <div class="flex shrink-0 flex-col gap-2">
+            <NuxtLink
+                :to="`/tasks/${task.id}`"
+                class="rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              Open
+            </NuxtLink>
+
             <button
                 type="button"
                 v-if="isManager"
@@ -593,6 +600,15 @@ import type {
   User,
   UsersResponse,
 } from '~/types/user'
+import {
+  badgeClass,
+  dueBadge,
+  formatDate,
+  priorityChipClass,
+  priorityLabel,
+  statusChipClass,
+  statusLabel,
+} from '~/utils/taskDisplay'
 
 const { apiFetch } = useApi()
 const { profile, ensureProfile } = useAuth()
@@ -857,101 +873,6 @@ async function applyFilters() {
   await loadTasksWithFilters()
 }
 
-const DUE_SOON_DAYS = 3
-
-function todayISO(): string {
-  const now = new Date()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-
-  return `${now.getFullYear()}-${month}-${day}`
-}
-
-function addDaysToISO(iso: string, days: number): string {
-  const date = new Date(`${iso}T00:00:00`)
-  date.setDate(date.getDate() + days)
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${date.getFullYear()}-${month}-${day}`
-}
-
-function dueBadge(task: Task): { label: string; type: string } | null {
-  if (!task.due_date || task.status === 'completed') {
-    return null
-  }
-
-  const today = todayISO()
-
-  if (task.due_date < today) {
-    return { label: 'Overdue', type: 'overdue' }
-  }
-
-  if (task.due_date === today) {
-    return { label: 'Due today', type: 'due-today' }
-  }
-
-  if (task.due_date <= addDaysToISO(today, DUE_SOON_DAYS)) {
-    return { label: 'Due soon', type: 'due-soon' }
-  }
-
-  return null
-}
-
-function badgeClass(task: Task): string {
-  const type = dueBadge(task)?.type
-
-  if (type === 'overdue') {
-    return 'bg-red-100 text-red-700'
-  }
-
-  if (type === 'due-today') {
-    return 'bg-amber-100 text-amber-700'
-  }
-
-  return 'bg-blue-100 text-blue-700'
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: 'Pending',
-  in_progress: 'In progress',
-  completed: 'Completed',
-}
-
-const STATUS_CLASSES: Record<string, string> = {
-  pending: 'bg-gray-100 text-gray-600',
-  in_progress: 'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-}
-
-const PRIORITY_LABELS: Record<string, string> = {
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-}
-
-const PRIORITY_CLASSES: Record<string, string> = {
-  low: 'bg-gray-100 text-gray-600',
-  medium: 'bg-amber-100 text-amber-700',
-  high: 'bg-red-100 text-red-700',
-}
-
-function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status
-}
-
-function statusChipClass(status: string): string {
-  return STATUS_CLASSES[status] ?? 'bg-gray-100 text-gray-600'
-}
-
-function priorityLabel(priority: string): string {
-  return PRIORITY_LABELS[priority] ?? priority
-}
-
-function priorityChipClass(priority: string): string {
-  return PRIORITY_CLASSES[priority] ?? 'bg-gray-100 text-gray-600'
-}
-
 async function createTask() {
   creating.value = true
   createError.value = ''
@@ -1189,16 +1110,6 @@ function historyLine(entry: TaskOwnershipHistoryEntry): string {
   const suffix = entry.note ? ` (${entry.note})` : ''
 
   return `Transferred from ${entry.from_user_name} to ${entry.to_user_name} by ${entry.performed_by_name}${suffix} on ${formatDate(entry.created_at)}`
-}
-
-function formatDate(value: string): string {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return date.toLocaleString()
 }
 
 async function loadComments(taskId: number) {
