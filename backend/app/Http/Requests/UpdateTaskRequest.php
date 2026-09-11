@@ -32,6 +32,8 @@ class UpdateTaskRequest extends FormRequest
             'status' => ['sometimes', 'required', 'in:pending,in_progress,completed'],
             'priority' => ['sometimes', 'required', 'in:low,medium,high'],
             'due_date' => ['sometimes', 'nullable', 'date'],
+            'tag_ids' => ['sometimes', 'nullable', 'array'],
+            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')],
         ];
     }
 }

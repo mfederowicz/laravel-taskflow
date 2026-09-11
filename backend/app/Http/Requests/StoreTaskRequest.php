@@ -32,6 +32,8 @@ class StoreTaskRequest extends FormRequest
             'status' => ['required', 'in:pending,in_progress,completed'],
             'priority' => ['required', 'in:low,medium,high'],
             'due_date' => ['nullable', 'date'],
+            'tag_ids' => ['nullable', 'array'],
+            'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')],
         ];
     }
 }

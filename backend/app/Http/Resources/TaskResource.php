@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Tag;
 use App\Models\TaskOwnershipHistory;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -30,6 +31,11 @@ class TaskResource extends JsonResource
             'shared' => $this->project
                 ? $this->project->user_id !== $request->user()?->id
                 : false,
+            'tags' => $this->tags->map(fn (Tag $tag) => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+                'color' => $tag->color,
+            ]),
             'ownership_history' => $this->whenLoaded('ownershipHistories', function () {
                 return $this->ownershipHistories->map(
                     fn (TaskOwnershipHistory $entry) => [

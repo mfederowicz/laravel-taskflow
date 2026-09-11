@@ -73,13 +73,14 @@ class TaskController extends Controller
             $task->due_date,
             $task->project?->name,
             $task->user->name,
+            $task->tags->map(fn ($tag) => $tag->name)->implode(', '),
             $task->created_at?->toDateTimeString(),
             $task->updated_at?->toDateTimeString(),
         ]);
 
         $csv = Export::csv([
             'id', 'title', 'description', 'status', 'priority', 'due_date',
-            'project', 'owner', 'created_at', 'updated_at',
+            'project', 'owner', 'tags', 'created_at', 'updated_at',
         ], $rows);
 
         return response($csv, 200)
@@ -115,9 +116,11 @@ class TaskController extends Controller
             'to_user_id' => $request->user()->id,
         ]);
 
+        $task->tags()->sync($request->validated('tag_ids') ?? []);
+
         return response()->json([
             'data' => new TaskResource(
-                $task->load(['user', 'project', 'ownershipHistories.performedBy',
+                $task->load(['user', 'project', 'tags', 'ownershipHistories.performedBy',
                     'ownershipHistories.fromUser', 'ownershipHistories.toUser', ])
             ),
         ], 201);
@@ -133,6 +136,10 @@ class TaskController extends Controller
         $previousStatus = $task->status;
         $task->update($request->validated());
 
+        if ($request->has('tag_ids')) {
+            $task->tags()->sync($request->validated('tag_ids'));
+        }
+
         if ($previousStatus !== 'completed' && $task->status === 'completed') {
             $task->notifications()
                 ->whereIn('type', [
@@ -143,7 +150,7 @@ class TaskController extends Controller
         }
 
         return new TaskResource(
-            $task->load(['user', 'project'])
+            $task->load(['user', 'project', 'tags'])
         );
     }
 
@@ -167,7 +174,7 @@ class TaskController extends Controller
     {
         $this->authorize('view', $task);
 
-        $task->load(['user', 'project']);
+        $task->load(['user', 'project', 'tags']);
 
         if ($this->wantsHistory($request)) {
             $task->load(['ownershipHistories.performedBy',
@@ -205,7 +212,7 @@ class TaskController extends Controller
         });
 
         return new TaskResource(
-            $task->load(['user', 'project', 'ownershipHistories.performedBy',
+            $task->load(['user', 'project', 'tags', 'ownershipHistories.performedBy',
                 'ownershipHistories.fromUser', 'ownershipHistories.toUser', ])
         );
     }
@@ -230,7 +237,7 @@ class TaskController extends Controller
         $user = $request->user();
 
         return Task::query()
-            ->with(['user', 'project'])
+            ->with(['user', 'project', 'tags'])
             ->when(
                 ! $user->isManager(),
                 fn ($query) => $query->where(function ($subQuery) use ($user) {
@@ -258,6 +265,12 @@ class TaskController extends Controller
             ->when(
                 $request->priority,
                 fn ($query, $priority) => $query->where('priority', $priority)
+            )
+            ->when(
+                $this->isValidInt($request->input('tag_id')),
+                fn ($query, $tagId) => $query->whereHas('tags', function ($tagQuery) use ($tagId) {
+                    $tagQuery->where('tags.id', (int) $tagId);
+                })
             )
             ->when(
                 trim((string) $request->string('search')),
