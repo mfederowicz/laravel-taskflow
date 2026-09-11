@@ -130,4 +130,4 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 - Calendar / agenda view of due dates.
 - Activity feed / audit log per project.
 - Passkeys (passwordless WebAuthn login).
-- Personal API tokens (user-owned, not tied to an OAuth client).
+- Personal API tokens (user-owned, not tied to an OAuth client) — maybe someday.
