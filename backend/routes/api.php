@@ -50,8 +50,9 @@ Route::prefix('v1')->group(function () {
             ]);
         });
 
-        // Users (manager only)
+        // Users (manager only; search for project invitations)
         Route::get('/users', [UserController::class, 'index']);
+        Route::get('/users/search', [UserController::class, 'search']);
         Route::post('/users/{user}/lock', [UserController::class, 'lock']);
         Route::post('/users/{user}/unlock', [UserController::class, 'unlock']);
         Route::patch('/users/{user}/role', [UserController::class, 'updateRole']);

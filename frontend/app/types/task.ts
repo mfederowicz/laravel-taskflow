@@ -44,6 +44,7 @@ export interface Task {
         id: number
         name: string
     } | null
+    shared?: boolean
     ownership_history?: TaskOwnershipHistoryEntry[]
     created_at: string
     updated_at: string

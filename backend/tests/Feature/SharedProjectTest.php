@@ -316,4 +316,43 @@ class SharedProjectTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data');
     }
+
+    public function test_member_can_filter_tasks_by_project(): void
+    {
+        $member = User::factory()->create();
+        $owner = User::factory()->create();
+        $sharedProject = Project::factory()->for($owner)->create(['name' => 'Team']);
+        $this->addMember($sharedProject, $member, ProjectMemberRole::Editor);
+        Task::factory()->for($owner)->for($sharedProject)->create(['title' => 'In shared']);
+
+        $ownProject = Project::factory()->for($member)->create(['name' => 'Mine']);
+        Task::factory()->for($member)->for($ownProject)->create(['title' => 'In own']);
+
+        Sanctum::actingAs($member);
+
+        $this->getJson('/api/v1/tasks?project_id='.$ownProject->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'In own');
+
+        $this->getJson('/api/v1/tasks?project_id='.$sharedProject->id)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'In shared');
+    }
+
+    public function test_task_filter_omits_unrelated_projects(): void
+    {
+        $member = User::factory()->create();
+        $owner = User::factory()->create();
+        $project = Project::factory()->for($owner)->create(['name' => 'Team']);
+        $this->addMember($project, $member, ProjectMemberRole::Viewer);
+        Task::factory()->for($owner)->for($project)->create(['title' => 'Team task']);
+
+        Sanctum::actingAs($member);
+
+        $this->getJson('/api/v1/tasks?project_id=999999')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SearchUsersRequest;
 use App\Http\Requests\UpdateUserPasswordRequest;
 use App\Http\Requests\UpdateUserRoleRequest;
 use App\Http\Resources\UserResource;
@@ -24,6 +25,30 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
 
         return UserResource::collection(User::latest()->paginate(10));
+    }
+
+    /**
+     * Search active accounts (for inviting users to a project).
+     *
+     * Available to managers, project owners, and project admins. Returns a
+     * small, unnested set of active users matching the query.
+     */
+    public function search(SearchUsersRequest $request): AnonymousResourceCollection
+    {
+        $this->authorize('search', User::class);
+
+        $query = User::query()
+            ->where('status', UserStatus::Active)
+            ->orderBy('name');
+
+        if ($q = trim((string) $request->validated('q'))) {
+            $query->where(function ($builder) use ($q) {
+                $builder->where('name', 'like', "%{$q}%")
+                    ->orWhere('email', 'like', "%{$q}%");
+            });
+        }
+
+        return UserResource::collection($query->limit(10)->get());
     }
 
     /**

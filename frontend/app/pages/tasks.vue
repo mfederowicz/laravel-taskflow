@@ -18,16 +18,16 @@
             {{ projectsLoading ? 'Loading projects...' : 'Select a project' }}
           </option>
 
-          <option
-              v-for="project in projects"
-              :key="project.id"
-              :value="String(project.id)"
-          >
-            {{ project.name }}
-          </option>
-        </select>
+<option
+                  v-for="project in creatableProjects"
+                  :key="project.id"
+                  :value="String(project.id)"
+              >
+                {{ project.name }}
+              </option>
+            </select>
 
-        <p v-if="validationErrors.project_id" class="mt-1 text-sm text-red-600">
+              <p v-if="validationErrors.project_id" class="mt-1 text-sm text-red-600">
           {{ validationErrors.project_id[0] }}
         </p>
 
@@ -203,14 +203,14 @@
                   Select a project
                 </option>
 
-                <option
-                    v-for="project in projects"
-                    :key="project.id"
-                    :value="String(project.id)"
-                >
-                  {{ project.name }}
-                </option>
-              </select>
+<option
+                  v-for="project in allProjectOptions"
+                  :key="project.id"
+                  :value="String(project.id)"
+              >
+                {{ project.name }}
+              </option>
+            </select>
 
               <p v-if="updateValidationErrors.project_id" class="mt-1 text-sm text-red-600">
                 {{ updateValidationErrors.project_id[0] }}
@@ -315,6 +315,12 @@
               </span>
               <span v-if="task.project" class="text-gray-500">
                 — {{ task.project.name }}
+              </span>
+              <span
+                  v-if="task.shared"
+                  class="ml-2 rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-700"
+              >
+                Shared
               </span>
               <span v-if="isManager" class="text-gray-500">
                 — <span class="text-gray-400">owner: {{ task.user.name }}</span>
@@ -433,7 +439,7 @@
                   </button>
                 </div>
 
-                <form @submit.prevent="createComment(task.id)" class="flex flex-col gap-2">
+                <form v-if="canCommentTask(task)" @submit.prevent="createComment(task.id)" class="flex flex-col gap-2">
                   <textarea
                       v-model="commentBodies[task.id]"
                       placeholder="Write a comment..."
@@ -492,6 +498,7 @@
 
             <button
                 type="button"
+                v-if="canEditTask(task)"
                 @click="startEditing(task)"
                 class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
@@ -500,6 +507,7 @@
 
             <button
                 type="button"
+                v-if="canDeleteTask(task)"
                 @click="deleteTask(task.id)"
                 class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             >
@@ -586,6 +594,84 @@ const commentLastPage = ref<Record<number, number>>({})
 const projects = ref<Project[]>([])
 const projectsLoading = ref(true)
 const projectsError = ref('')
+
+const creatableProjects = computed(() =>
+    projects.value.filter((project) =>
+        project.role === 'owner' ||
+        project.role === 'admin' ||
+        project.role === 'editor'
+    )
+)
+
+const allProjectOptions = computed<Project[]>(() => {
+  const options = new Map<number, Project>()
+
+  for (const project of projects.value) {
+    options.set(project.id, project)
+  }
+
+  for (const task of tasks.value) {
+    if (task.project && !options.has(task.project.id)) {
+      options.set(task.project.id, {
+        id: task.project.id,
+        name: task.project.name,
+        description: null,
+        user: { id: 0, name: '' },
+        role: 'owner',
+        created_at: '',
+        updated_at: '',
+      })
+    }
+  }
+
+  return Array.from(options.values())
+})
+
+function taskProjectRole(task: Task): string | null {
+  if (!task.project) {
+    return null
+  }
+
+  return projects.value.find(
+      (project: Project) => project.id === task.project!.id
+  )?.role ?? null
+}
+
+function canEditTask(task: Task): boolean {
+  if (isManager.value) {
+    return true
+  }
+
+  if (task.user.id === profile.value?.id) {
+    return true
+  }
+
+  const role = taskProjectRole(task)
+
+  return role === 'admin' || role === 'editor'
+}
+
+function canDeleteTask(task: Task): boolean {
+  if (isManager.value) {
+    return true
+  }
+
+  if (task.user.id === profile.value?.id) {
+    return true
+  }
+
+  return taskProjectRole(task) === 'admin'
+}
+
+function canCommentTask(task: Task): boolean {
+  if (task.user.id === profile.value?.id) {
+    return true
+  }
+
+  const role = taskProjectRole(task)
+
+  return role === 'admin' || role === 'editor'
+}
 
 const tasks = ref<Task[]>([])
 const pending = ref(true)
