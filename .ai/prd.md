@@ -15,7 +15,7 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 - No teams/orgs beyond per-project membership — collaboration is scoped to projects users join.
 - No real-time push — notifications are in-app only, delivered via 60s polling.
-- No file attachments — TaskFlow stores only task metadata in database tables.
+- No file attachments — TaskFlow does not handle file uploads, storage, or media of any kind; all data (tasks, projects, comments, notifications, memberships) is stored in database tables only.
 - No admin panel / Blade views (API-only backend).
 
 ## Users & Personas
