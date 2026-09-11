@@ -1,10 +1,6 @@
 <template>
   <AppNav />
   <main>
-    <NuxtLink to="/projects" class="text-sm text-blue-600 hover:text-blue-700">
-      ← Back to projects
-    </NuxtLink>
-
     <p v-if="pending" class="mt-4 text-sm text-gray-500">
       Loading project...
     </p>
@@ -36,6 +32,12 @@
         <p class="mt-3 flex flex-wrap gap-x-4 text-sm text-gray-500">
           <span>Owner: {{ project.user.name }}</span>
           <span>Created: {{ formatDate(project.created_at) }}</span>
+        </p>
+
+        <p class="mt-3">
+          <NuxtLink to="/projects" class="text-sm font-semibold text-blue-600 hover:text-blue-700">
+            ← Back to projects
+          </NuxtLink>
         </p>
       </div>
 
