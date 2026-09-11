@@ -80,7 +80,7 @@ const form = reactive({
 })
 
 onMounted(async () => {
-  const profile = await ensureProfile()
+  const profile = await ensureProfile({ refresh: true })
 
   if (profile) {
     form.name = profile.name

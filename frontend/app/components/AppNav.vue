@@ -295,7 +295,7 @@ const hasReadNotifications = computed(() =>
 
 onMounted(async () => {
   if (getToken()) {
-    await ensureProfile()
+    await ensureProfile({ refresh: true })
     await loadNotifications()
     await loadUnread()
     startPolling()
