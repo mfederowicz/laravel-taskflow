@@ -56,6 +56,24 @@ class ProjectPolicy
     }
 
     /**
+     * Determine whether the user can view the project member list.
+     * The project owner and any project member may view the roster.
+     */
+    public function viewMembers(User $user, Project $project): bool
+    {
+        return $user->id === $project->user_id || $project->hasMember($user);
+    }
+
+    /**
+     * Determine whether the user can manage project members
+     * (add, change roles, or remove members).
+     */
+    public function manageMembers(User $user, Project $project): bool
+    {
+        return $user->id === $project->user_id || $project->isMemberAdmin($user);
+    }
+
+    /**
      * Determine whether the user can restore the model.
      */
     public function restore(User $user, Project $project): bool
