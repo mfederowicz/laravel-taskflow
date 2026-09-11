@@ -60,7 +60,7 @@ Everything runs through Docker Compose. Start the stack from the repo root:
 Services:
 
 - `nginx` — entry point on `${APP_PORT:-8080}`; proxies `/api/*` to the backend and everything else to the frontend
-- `backend` — PHP-FPM (Laravel), working dir `/var/www/html`; env vars are injected from the repo root `.env` via `env_file`
+- `backend` — PHP-FPM (Laravel), working dir `/var/www/html`; env vars are injected from the repo root `.env` via `env_file`; the container entrypoint also starts `php artisan schedule:work` in the background (in-app notification scheduler)
 - `frontend` — Nuxt dev server on port 3000, working dir `/app`; `node_modules` is a named volume
 
 Run artisan commands (executes inside the backend container):

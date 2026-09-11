@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\NotificationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\TransferTaskRequest;
@@ -114,7 +115,17 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
+        $previousStatus = $task->status;
         $task->update($request->validated());
+
+        if ($previousStatus !== 'completed' && $task->status === 'completed') {
+            $task->notifications()
+                ->whereIn('type', [
+                    NotificationType::TaskDue->value,
+                    NotificationType::TaskOverdue->value,
+                ])
+                ->delete();
+        }
 
         return new TaskResource(
             $task->load(['user', 'project'])

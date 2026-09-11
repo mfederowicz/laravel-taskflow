@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\TaskController;
@@ -81,5 +82,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/tasks/{task}/comments/{comment}', [CommentController::class, 'show'])->scopeBindings();
         Route::put('/tasks/{task}/comments/{comment}', [CommentController::class, 'update'])->scopeBindings();
         Route::delete('/tasks/{task}/comments/{comment}', [CommentController::class, 'destroy'])->scopeBindings();
+
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     });
 });
