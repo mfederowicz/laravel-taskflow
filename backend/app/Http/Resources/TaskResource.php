@@ -27,6 +27,9 @@ class TaskResource extends JsonResource
                     'name' => $this->project->name,
                 ]
                 : null,
+            'shared' => $this->project
+                ? $this->project->user_id !== $request->user()?->id
+                : false,
             'ownership_history' => $this->whenLoaded('ownershipHistories', function () {
                 return $this->ownershipHistories->map(
                     fn (TaskOwnershipHistory $entry) => [

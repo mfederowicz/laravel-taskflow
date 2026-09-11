@@ -17,13 +17,21 @@ use Illuminate\Http\Response;
 class ProjectController extends Controller
 {
     /**
-     * List the authenticated user's projects.
+     * List the authenticated user's projects: those they own plus any
+     * project they belong to as a member.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $projects = $request->user()
-            ->projects()
-            ->with('user')
+        $user = $request->user();
+
+        $projects = Project::query()
+            ->with(['user', 'members'])
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhereHas('members', function ($members) use ($user) {
+                        $members->where('user_id', $user->id);
+                    });
+            })
             ->latest()
             ->paginate(10);
 
@@ -40,7 +48,7 @@ class ProjectController extends Controller
         );
 
         return response()->json([
-            'data' => new ProjectResource($project->load('user')),
+            'data' => new ProjectResource($project->load(['user', 'members'])),
         ], 201);
     }
 
@@ -51,7 +59,7 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        return new ProjectResource($project->load('user'));
+        return new ProjectResource($project->load(['user', 'members']));
     }
 
     /**
@@ -65,7 +73,7 @@ class ProjectController extends Controller
 
         $project->update($request->validated());
 
-        return new ProjectResource($project->load('user'));
+        return new ProjectResource($project->load(['user', 'members']));
     }
 
     /**

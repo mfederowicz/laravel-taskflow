@@ -14,6 +14,12 @@ class ProjectResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $user = $request->user();
+
+        $role = $this->user_id === $user?->id
+            ? 'owner'
+            : ($this->members?->firstWhere('user_id', $user?->id)?->role->value ?? 'viewer');
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -22,6 +28,7 @@ class ProjectResource extends JsonResource
                 'id' => $this->user->id,
                 'name' => $this->user->name,
             ],
+            'role' => $role,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

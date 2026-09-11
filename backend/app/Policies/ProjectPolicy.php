@@ -21,10 +21,12 @@ class ProjectPolicy
 
     /**
      * Determine whether the user can view the model.
+     *
+     * The project owner and every project member may view the project.
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id;
+        return $user->id === $project->user_id || $project->hasMember($user);
     }
 
     /**
@@ -41,10 +43,12 @@ class ProjectPolicy
 
     /**
      * Determine whether the user can update the model.
+     *
+     * The project owner and project admins may update the project.
      */
     public function update(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id;
+        return $user->id === $project->user_id || $project->isMemberAdmin($user);
     }
 
     /**

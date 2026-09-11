@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,12 +15,18 @@ class UpdateTaskRequest extends FormRequest
 
     public function rules(): array
     {
+        $userId = $this->user()->id;
+
         return [
-            'project_id' => ['sometimes', 'required', 'integer', Rule::exists('projects', 'id')
-                ->where(
-                    'user_id',
-                    $this->user()->id
-                )],
+            'project_id' => ['sometimes', 'required', 'integer', Rule::exists('projects', 'id')->where(function (Builder $query) use ($userId) {
+                $query->where('user_id', $userId)
+                    ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                        $sub->select('project_id')
+                            ->from('project_members')
+                            ->where('user_id', $userId)
+                            ->whereIn('role', ['admin', 'editor']);
+                    });
+            })],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
             'status' => ['sometimes', 'required', 'in:pending,in_progress,completed'],

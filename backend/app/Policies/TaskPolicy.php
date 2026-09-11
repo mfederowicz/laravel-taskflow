@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\ProjectMemberRole;
 use App\Models\Task;
 use App\Models\User;
 
@@ -14,7 +15,9 @@ class TaskPolicy
 
     public function view(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id || $user->isManager();
+        return $user->id === $task->user_id
+            || $user->isManager()
+            || $this->isProjectMember($user, $task);
     }
 
     /**
@@ -32,21 +35,50 @@ class TaskPolicy
     /**
      * Determine whether the user can comment on the task.
      *
-     * Only the task owner may add a comment — the same ownership rule used
-     * by the other TaskPolicy methods.
+     * The task owner always may comment; members of the task's project may
+     * comment when they hold at least the editor role.
      */
     public function comment(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id
+            || $this->isAdminOrEditor($user, $task);
     }
 
     public function update(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id
+            || $user->isManager()
+            || $this->isAdminOrEditor($user, $task);
     }
 
     public function delete(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id
+            || $user->isManager()
+            || $this->isProjectAdmin($user, $task);
+    }
+
+    private function isProjectMember(User $user, Task $task): bool
+    {
+        return $task->project?->hasMember($user) ?? false;
+    }
+
+    private function isProjectAdmin(User $user, Task $task): bool
+    {
+        return $this->projectRole($user, $task) === ProjectMemberRole::Admin;
+    }
+
+    private function isAdminOrEditor(User $user, Task $task): bool
+    {
+        return in_array(
+            $this->projectRole($user, $task),
+            [ProjectMemberRole::Admin, ProjectMemberRole::Editor],
+            true
+        );
+    }
+
+    private function projectRole(User $user, Task $task): ?ProjectMemberRole
+    {
+        return $task->project?->getMemberRole($user);
     }
 }

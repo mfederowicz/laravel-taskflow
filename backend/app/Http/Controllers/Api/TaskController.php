@@ -8,6 +8,7 @@ use App\Http\Requests\StoreTaskRequest;
 use App\Http\Requests\TransferTaskRequest;
 use App\Http\Requests\UpdateTaskRequest;
 use App\Http\Resources\TaskResource;
+use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
@@ -36,7 +37,12 @@ class TaskController extends Controller
             ->with(['user', 'project'])
             ->when(
                 ! $user->isManager(),
-                fn ($query) => $query->where('user_id', $user->id)
+                fn ($query) => $query->where(function ($subQuery) use ($user) {
+                    $subQuery->where('user_id', $user->id)
+                        ->orWhereHas('project.members', function ($members) use ($user) {
+                            $members->where('user_id', $user->id);
+                        });
+                })
             )
             ->when(
                 $user->isManager() && $this->isValidInt($request->input('user_id')),
@@ -81,8 +87,7 @@ class TaskController extends Controller
 
         $validated = $request->validated();
 
-        $project = $request->user()
-            ->projects()
+        $project = $this->eligibleProjects($request->user())
             ->findOrFail($validated['project_id']);
 
         $task = $project->tasks()->create([
@@ -207,5 +212,21 @@ class TaskController extends Controller
     private function isValidInt(mixed $value): bool
     {
         return is_numeric($value) && filter_var($value, FILTER_VALIDATE_INT) !== false;
+    }
+
+    /**
+     * Projects the user may create tasks in: their own projects plus any
+     * project where they hold at least the editor member role.
+     */
+    private function eligibleProjects(User $user)
+    {
+        return Project::query()
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhereHas('members', function ($members) use ($user) {
+                        $members->where('user_id', $user->id)
+                            ->whereIn('role', ['admin', 'editor']);
+                    });
+            });
     }
 }
