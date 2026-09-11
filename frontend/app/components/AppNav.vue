@@ -312,7 +312,9 @@ async function openNotification(notification: NotificationItem) {
   }
 
   notificationOpen.value = false
-  await navigateTo('/tasks')
+  await navigateTo(
+    notification.task_id ? `/tasks/${notification.task_id}` : '/tasks',
+  )
 }
 
 async function handleMarkAllRead() {
