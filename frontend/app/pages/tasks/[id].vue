@@ -105,6 +105,22 @@
             </div>
           </div>
 
+          <div>
+            <label class="mb-1 block text-sm font-semibold text-gray-700">Tags</label>
+            <div class="flex flex-wrap gap-2">
+              <label
+                  v-for="tag in tags"
+                  :key="tag.id"
+                  class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+                  :class="editForm.tag_ids.includes(tag.id) ? 'ring-2 ring-offset-1' : 'opacity-70'"
+                  :style="tagChipStyle(tag)"
+              >
+                <input v-model="editForm.tag_ids" type="checkbox" :value="tag.id" class="sr-only">
+                {{ tag.name }}
+              </label>
+            </div>
+          </div>
+
           <div class="flex items-center gap-3">
             <button
                 type="submit"
@@ -171,6 +187,32 @@
             <span>Created: {{ formatDate(task.created_at) }}</span>
             <span>Updated: {{ formatDate(task.updated_at) }}</span>
           </p>
+
+          <div v-if="task.tags.length" class="mt-3 flex flex-wrap items-center gap-2">
+            <span
+                v-for="tag in task.tags"
+                :key="tag.id"
+                class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :style="tagChipStyle(tag)"
+            >
+              {{ tag.name }}
+
+              <button
+                  v-if="canEdit"
+                  type="button"
+                  :disabled="tagRemoving === tag.id"
+                  class="ml-0.5 font-semibold leading-none hover:opacity-60 disabled:opacity-40"
+                  title="Remove tag"
+                  @click="removeTag(tag.id)"
+              >
+                ✕
+              </button>
+            </span>
+
+            <span v-if="tagRemoveError" class="text-sm text-red-600">
+              {{ tagRemoveError }}
+            </span>
+          </div>
 
           <div class="mt-4 flex flex-wrap gap-2">
             <button
@@ -376,6 +418,7 @@ import type {
 } from '~/types/task'
 import type { Project, ProjectsResponse } from '~/types/project'
 import type { User, UsersResponse } from '~/types/user'
+import type { Tag, TagsResponse } from '~/types/tag'
 import {
   badgeClass,
   dueBadge,
@@ -384,6 +427,7 @@ import {
   priorityLabel,
   statusChipClass,
   statusLabel,
+  tagChipStyle,
 } from '~/utils/taskDisplay'
 
 definePageMeta({
@@ -405,6 +449,7 @@ const pending = ref(true)
 const error = ref('')
 
 const projects = ref<Project[]>([])
+const tags = ref<Tag[]>([])
 
 const users = ref<User[]>([])
 const usersError = ref('')
@@ -414,6 +459,9 @@ const updating = ref(false)
 const updateError = ref('')
 const updateValidationErrors = ref<Record<string, string[]>>({})
 
+const tagRemoving = ref<number | null>(null)
+const tagRemoveError = ref('')
+
 const editForm = reactive({
   project_id: '',
   title: '',
@@ -421,6 +469,7 @@ const editForm = reactive({
   status: 'pending',
   priority: 'medium',
   due_date: '',
+  tag_ids: [] as number[],
 })
 
 const transferOpen = ref(false)
@@ -552,6 +601,7 @@ onMounted(async () => {
   await Promise.all([
     loadTask(),
     loadProjects(),
+    loadTags(),
     loadComments(),
   ])
 
@@ -559,6 +609,15 @@ onMounted(async () => {
     await loadAllUsers()
   }
 })
+
+async function loadTags() {
+  try {
+    const response = await apiFetch<TagsResponse>('/api/v1/tags')
+    tags.value = response.data
+  } catch {
+    tags.value = []
+  }
+}
 
 async function loadTask() {
   pending.value = true
@@ -626,6 +685,7 @@ function startEditing() {
   editForm.status = task.value.status
   editForm.priority = task.value.priority
   editForm.due_date = task.value.due_date ?? ''
+  editForm.tag_ids = task.value.tags.map((tag) => tag.id)
 
   updateError.value = ''
   updateValidationErrors.value = {}
@@ -658,6 +718,7 @@ async function updateTask() {
           status: editForm.status,
           priority: editForm.priority,
           due_date: editForm.due_date || null,
+          tag_ids: editForm.tag_ids,
         },
       },
     )
@@ -672,6 +733,35 @@ async function updateTask() {
     }
   } finally {
     updating.value = false
+  }
+}
+
+async function removeTag(tagId: number) {
+  if (!task.value) {
+    return
+  }
+
+  tagRemoving.value = tagId
+  tagRemoveError.value = ''
+
+  const tagIds = task.value.tags
+    .filter((tag) => tag.id !== tagId)
+    .map((tag) => tag.id)
+
+  try {
+    const response = await apiFetch<TaskResponse>(
+      `/api/v1/tasks/${task.value.id}`,
+      {
+        method: 'PUT',
+        body: { tag_ids: tagIds },
+      },
+    )
+
+    task.value = response.data
+  } catch (err: any) {
+    tagRemoveError.value = err?.data?.message ?? 'Failed to remove tag.'
+  } finally {
+    tagRemoving.value = null
   }
 }
 

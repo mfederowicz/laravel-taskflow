@@ -3,7 +3,21 @@
   <main>
     <h1 class="mt-0 text-2xl font-bold text-gray-900">{{ isManager ? 'All Tasks' : 'My Tasks' }}</h1>
 
-    <form @submit.prevent="createTask" class="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+    <div class="mt-4 flex items-center gap-3">
+      <button
+          type="button"
+          @click="toggleCreateForm"
+          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+      >
+        {{ showCreateForm ? 'Hide form' : '+ Add task' }}
+      </button>
+
+      <p v-if="createSuccess" class="rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-800">
+        ✓ Task created: {{ createSuccess }}
+      </p>
+    </div>
+
+    <form v-if="showCreateForm" @submit.prevent="createTask" class="mb-6 mt-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
       <div class="mb-4">
         <label for="project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
@@ -395,6 +409,7 @@ import {
   priorityLabel,
   statusChipClass,
   statusLabel,
+  tagChipStyle,
 } from '~/utils/taskDisplay'
 
 const { apiFetch, apiDownload } = useApi()
@@ -442,6 +457,8 @@ const error = ref('')
 
 const creating = ref(false)
 const createError = ref('')
+const createSuccess = ref('')
+const showCreateForm = ref(true)
 const validationErrors = ref<Record<string, string[]>>({})
 
 const currentPage = ref(1)
@@ -492,14 +509,9 @@ onMounted(async () => {
   }
 })
 
-function tagChipStyle(tag: Tag): Record<string, string> {
-  const color = tag.color ?? '#6b7280'
-
-  return {
-    backgroundColor: `${color}22`,
-    border: `1px solid ${color}55`,
-    color,
-  }
+function toggleCreateForm() {
+  showCreateForm.value = !showCreateForm.value
+  createSuccess.value = ''
 }
 
 async function loadTags() {
@@ -683,6 +695,7 @@ async function applyFilters() {
 async function createTask() {
   creating.value = true
   createError.value = ''
+  createSuccess.value = ''
   validationErrors.value = {}
 
   try {
@@ -708,6 +721,9 @@ async function createTask() {
     form.priority = 'medium'
     form.due_date = ''
     form.tag_ids = []
+
+    createSuccess.value = response.data.title
+    showCreateForm.value = false
   } catch (err: any) {
     if (err?.status === 422 && err?.data?.errors) {
       validationErrors.value = err.data.errors
