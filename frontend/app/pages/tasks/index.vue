@@ -139,10 +139,12 @@
           <button
               type="button"
               :disabled="addingTag"
+              :aria-label="addingTag ? 'Adding tag...' : 'Add tag'"
+              :title="addingTag ? 'Adding tag...' : 'Add tag'"
               @click="addNewTag"
-              class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-lg font-semibold leading-none text-gray-700 hover:bg-gray-50 disabled:opacity-60"
           >
-            {{ addingTag ? 'Adding...' : 'Add tag' }}
+            {{ addingTag ? '…' : '+' }}
           </button>
         </div>
       </div>
