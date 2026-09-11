@@ -242,6 +242,13 @@
             <button
                 type="button"
                 class="mb-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                @click="navigateTo('/profile')"
+            >
+              Profile
+            </button>
+            <button
+                type="button"
+                class="mb-2 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 @click="openPasswordPanel"
             >
               Change password

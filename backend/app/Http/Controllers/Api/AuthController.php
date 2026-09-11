@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\UpdateOwnPasswordRequest;
+use App\Http\Requests\UpdateOwnProfileRequest;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -250,6 +251,23 @@ class AuthController extends Controller
         }
 
         $user->update(['password' => $request->validated('password')]);
+
+        return response()->json([
+            'data' => $user->fresh(),
+        ]);
+    }
+
+    /**
+     * Update the authenticated user's profile.
+     *
+     * Allows the account owner to change their display name and email. The
+     * email must stay unique across accounts; the current user is exempted.
+     */
+    public function updateOwnProfile(UpdateOwnProfileRequest $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $user->update($request->validated());
 
         return response()->json([
             'data' => $user->fresh(),
