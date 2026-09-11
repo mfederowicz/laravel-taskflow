@@ -61,13 +61,15 @@ Authenticated requests must send `X-Auth-Method: sanctum|jwt|passport` plus `Aut
 - Tasks: `GET/POST /api/v1/tasks`, `GET/PUT/DELETE /api/v1/tasks/{task}`, `POST /api/v1/tasks/{task}/transfer`, `GET /api/v1/tasks/{task}?with=history`
 - Projects: `GET/POST /api/v1/projects`, `GET/PUT/DELETE /api/v1/projects/{project}`
 - Comments: `GET/POST /api/v1/tasks/{task}/comments`
-- Notifications: `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PATCH /api/v1/notifications/{notification}/read`, `POST /api/v1/notifications/read-all`
+- Notifications: `GET /api/v1/notifications`, `GET /api/v1/notifications/unread-count`, `PATCH /api/v1/notifications/{notification}/read`, `POST /api/v1/notifications/read-all`, `DELETE /api/v1/notifications/{notification}`, `POST /api/v1/notifications/clear-read`
 
 Authorization is enforced via `app/Policies` (`ProjectPolicy`, `TaskPolicy` — owners only, managers may view/transfer any task; `NotificationPolicy` — owner only). Validation lives in `app/Http/Requests`; responses use `app/Http/Resources`. Task transfers (manager → regular user, managers can never inherit) are recorded in `task_ownership_histories` and exposed via `?with=history`.
 
 ## Scheduled jobs
 
 The `notifications:send-due` command generates in-app reminders: a `task_due` notification when a task is due within `REMINDER_LEAD_HOURS` (default 24) and a `task_overdue` notification when it passes its due date. It is idempotent per task, skips completed tasks and locked owners, and runs hourly via the Laravel scheduler (started by the backend container entrypoint). Run it manually with `./bin/artisan notifications:send-due`. Completing a task removes its pending reminders.
+
+`notifications:prune` deletes read notifications older than `NOTIFICATIONS_RETENTION_DAYS` (default 30; unread are always kept) and runs daily at 03:00 (manual: `./bin/artisan notifications:prune`).
 
 ## Project layout
 

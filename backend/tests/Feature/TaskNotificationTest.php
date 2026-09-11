@@ -212,4 +212,80 @@ class TaskNotificationTest extends TestCase
 
         $this->assertDatabaseCount('notifications', 0);
     }
+
+    public function test_prune_deletes_old_read_notifications_but_keeps_unread_and_recent(): void
+    {
+        $user = User::factory()->create();
+
+        Notification::factory()->for($user)->create([
+            'type' => 'task_overdue',
+            'read_at' => now()->subDays(3),
+        ]);
+        Notification::factory()->for($user)->create([
+            'type' => 'task_overdue',
+            'read_at' => now()->subDays(1),
+        ]);
+        Notification::factory()->for($user)->create([
+            'type' => 'task_due',
+            'read_at' => null,
+        ]);
+
+        config(['reminders.retention_days' => 2]);
+
+        $this->artisan('notifications:prune')->assertSuccessful();
+
+        $this->assertSame(2, Notification::count());
+        $this->assertDatabaseHas('notifications', ['read_at' => now()->subDays(1)]);
+        $this->assertDatabaseHas('notifications', ['read_at' => null]);
+        $this->assertDatabaseMissing('notifications', ['read_at' => now()->subDays(3)]);
+    }
+
+    public function test_owner_can_delete_own_notification(): void
+    {
+        $user = User::factory()->create();
+        $notification = Notification::factory()->for($user)->create(['type' => 'task_due']);
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson("/api/v1/notifications/{$notification->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseCount('notifications', 0);
+    }
+
+    public function test_user_cannot_delete_another_users_notification(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $notification = Notification::factory()->for($owner)->create(['type' => 'task_due']);
+
+        Sanctum::actingAs($other);
+
+        $this->deleteJson("/api/v1/notifications/{$notification->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('notifications', 1);
+    }
+
+    public function test_clear_read_deletes_only_read_notifications(): void
+    {
+        $user = User::factory()->create();
+        Notification::factory()->for($user)->count(2)->create([
+            'type' => 'task_due',
+            'read_at' => now(),
+        ]);
+        Notification::factory()->for($user)->create([
+            'type' => 'task_due',
+            'read_at' => null,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/v1/notifications/clear-read')
+            ->assertOk()
+            ->assertJsonPath('data.deleted', 2);
+
+        $this->assertSame(1, Notification::count());
+        $this->assertDatabaseHas('notifications', ['read_at' => null]);
+    }
 }

@@ -9,6 +9,7 @@ use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 #[Group('Notifications')]
 class NotificationController extends Controller
@@ -64,5 +65,30 @@ class NotificationController extends Controller
             ->update(['read_at' => now()]);
 
         return response()->json(['data' => ['updated' => $updated]]);
+    }
+
+    /**
+     * Delete a single notification (owner only).
+     */
+    public function destroy(Notification $notification): Response
+    {
+        $this->authorize('delete', $notification);
+
+        $notification->delete();
+
+        return response()->noContent();
+    }
+
+    /**
+     * Delete all of the current user's read notifications.
+     */
+    public function clearRead(Request $request): JsonResponse
+    {
+        $deleted = Notification::query()
+            ->where('user_id', $request->user()->id)
+            ->whereNotNull('read_at')
+            ->delete();
+
+        return response()->json(['data' => ['deleted' => $deleted]]);
     }
 }
