@@ -45,7 +45,7 @@ class ExportTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/json')
             ->assertHeader('Content-Disposition', 'attachment; filename="tasks.json"')
-            ->assertJsonPath('data.0.title', 'JSON task');
+            ->assertJsonPath('0.title', 'JSON task');
     }
 
     public function test_csv_export_respects_filters(): void

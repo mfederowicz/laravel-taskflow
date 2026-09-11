@@ -58,7 +58,7 @@ class TaskController extends Controller
 
         if ($format === 'json') {
             return response()->json(
-                ['data' => TaskResource::collection($tasks)->resolve()],
+                TaskResource::collection($tasks)->resolve(),
                 200,
                 ['Content-Disposition' => 'attachment; filename="tasks.json"']
             );

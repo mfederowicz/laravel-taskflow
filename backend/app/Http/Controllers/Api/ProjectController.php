@@ -63,7 +63,7 @@ class ProjectController extends Controller
 
         if ($format === 'json') {
             return response()->json(
-                ['data' => ProjectResource::collection($projects)->resolve()],
+                ProjectResource::collection($projects)->resolve(),
                 200,
                 ['Content-Disposition' => 'attachment; filename="projects.json"']
             );
