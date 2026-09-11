@@ -186,8 +186,12 @@
       {{ error }}
     </p>
 
+    <p v-else-if="tasks.length === 0" class="text-sm text-gray-500">
+      No tasks match your filters.
+    </p>
+
     <ul v-else class="space-y-4">
-      <li v-for="task in tasks" :key="task.id" class="flex items-start gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+      <li v-for="task in tasks" :key="task.id" class="flex items-start gap-6 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" :class="{ 'opacity-60': task.status === 'completed' }">
         <template v-if="editingTaskId === task.id">
           <div class="min-w-0 flex-1 space-y-4">
             <div>
@@ -309,10 +313,22 @@
           <div class="min-w-0 flex-1">
             <div>
               <strong class="text-gray-900">{{ task.title }}</strong>
-              <span class="text-gray-500">
-                — <span class="text-gray-400">{{ task.status }}</span>
-                — <span class="text-gray-400">{{ task.priority }}</span>
+
+              <span class="ml-2 inline-flex items-center gap-1.5 align-middle">
+                <span
+                    class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="statusChipClass(task.status)"
+                >
+                  {{ statusLabel(task.status) }}
+                </span>
+                <span
+                    class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                    :class="priorityChipClass(task.priority)"
+                >
+                  {{ priorityLabel(task.priority) }}
+                </span>
               </span>
+
               <span v-if="task.project" class="text-gray-500">
                 — {{ task.project.name }}
               </span>
@@ -894,6 +910,46 @@ function badgeClass(task: Task): string {
   }
 
   return 'bg-blue-100 text-blue-700'
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  in_progress: 'In progress',
+  completed: 'Completed',
+}
+
+const STATUS_CLASSES: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-600',
+  in_progress: 'bg-blue-100 text-blue-700',
+  completed: 'bg-green-100 text-green-700',
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+}
+
+const PRIORITY_CLASSES: Record<string, string> = {
+  low: 'bg-gray-100 text-gray-600',
+  medium: 'bg-amber-100 text-amber-700',
+  high: 'bg-red-100 text-red-700',
+}
+
+function statusLabel(status: string): string {
+  return STATUS_LABELS[status] ?? status
+}
+
+function statusChipClass(status: string): string {
+  return STATUS_CLASSES[status] ?? 'bg-gray-100 text-gray-600'
+}
+
+function priorityLabel(priority: string): string {
+  return PRIORITY_LABELS[priority] ?? priority
+}
+
+function priorityChipClass(priority: string): string {
+  return PRIORITY_CLASSES[priority] ?? 'bg-gray-100 text-gray-600'
 }
 
 async function createTask() {
