@@ -52,6 +52,25 @@
 
         <p v-else class="mt-4 text-sm text-gray-500">Nothing overdue or due in the next few days. Nice work!</p>
       </div>
+
+      <div class="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+        <h2 class="text-lg font-semibold text-gray-900">Tasks per tag</h2>
+
+        <ul v-if="tagCounts.length" class="mt-4 divide-y divide-gray-100">
+          <li v-for="item in tagCounts" :key="item.name" class="flex items-center justify-between gap-4 py-2">
+            <span
+                class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :style="tagChipStyle(item)"
+            >
+              {{ item.name }}
+            </span>
+
+            <span class="text-sm tabular-nums text-gray-700">{{ item.count }}</span>
+          </li>
+        </ul>
+
+        <p v-else class="mt-4 text-sm text-gray-500">No tags in use yet.</p>
+      </div>
     </template>
   </main>
 </template>
@@ -59,7 +78,7 @@
 <script setup lang="ts">
 import type { Task, TasksResponse } from '~/types/task'
 import type { ProjectsResponse } from '~/types/project'
-import { badgeClass, dueBadge } from '~/utils/taskDisplay'
+import { badgeClass, dueBadge, tagChipStyle } from '~/utils/taskDisplay'
 
 definePageMeta({
   middleware: 'auth',
@@ -141,4 +160,24 @@ const comingUp = computed(() =>
     .sort((a, b) => (a.due_date! < b.due_date! ? -1 : 1))
     .slice(0, 8),
 )
+
+const tagCounts = computed(() => {
+  const counts = new Map<number, { name: string; color: string | null; count: number }>()
+
+  for (const task of tasks.value) {
+    for (const tag of task.tags) {
+      const entry = counts.get(tag.id)
+
+      if (entry) {
+        entry.count++
+      } else {
+        counts.set(tag.id, { name: tag.name, color: tag.color, count: 1 })
+      }
+    }
+  }
+
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+})
 </script>

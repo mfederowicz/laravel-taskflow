@@ -8,6 +8,10 @@ type DatedTask = {
     status: string
 }
 
+type Taggable = {
+    color?: string | null
+}
+
 const DUE_SOON_DAYS = 3
 
 const STATUS_LABELS: Record<string, string> = {
@@ -113,6 +117,16 @@ function formatDate(value: string): string {
     return date.toLocaleString()
 }
 
+function tagChipStyle(tag: Taggable): Record<string, string> {
+    const color = tag.color ?? '#6b7280'
+
+    return {
+        backgroundColor: `${color}22`,
+        border: `1px solid ${color}55`,
+        color,
+    }
+}
+
 export {
     dueBadge,
     badgeClass,
@@ -121,4 +135,5 @@ export {
     priorityLabel,
     priorityChipClass,
     formatDate,
+    tagChipStyle,
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectMemberController;
+use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\TaskController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
@@ -64,6 +65,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/oauth/clients', [OAuthClientController::class, 'index']);
         Route::post('/oauth/clients', [OAuthClientController::class, 'store']);
         Route::delete('/oauth/clients/{client}', [OAuthClientController::class, 'destroy']);
+
+        // Tags (shared vocabulary)
+        Route::get('/tags', [TagController::class, 'index']);
+        Route::post('/tags', [TagController::class, 'store']);
+        Route::delete('/tags/{tag}', [TagController::class, 'destroy']);
 
         // Tasks
         Route::get('/tasks', [TaskController::class, 'index']);

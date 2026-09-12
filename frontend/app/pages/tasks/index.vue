@@ -1,9 +1,26 @@
 <template>
   <AppNav />
   <main>
-    <h1 class="mt-0 text-2xl font-bold text-gray-900">{{ isManager ? 'All Tasks' : 'My Tasks' }}</h1>
+    <div class="flex items-center justify-between">
+      <h1 class="mt-0 text-2xl font-bold text-gray-900">{{ isManager ? 'All Tasks' : 'My Tasks' }}</h1>
 
-    <form @submit.prevent="createTask" class="mb-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+      <button
+          v-if="!showCreateForm"
+          type="button"
+          :aria-label="'Add task'"
+          :title="'Add task'"
+          @click="openCreateForm"
+          class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-2xl font-semibold leading-none text-white hover:bg-blue-700"
+      >
+        +
+      </button>
+    </div>
+
+    <p v-if="createSuccess" class="mt-4 rounded-lg bg-green-100 px-3 py-2 text-sm font-semibold text-green-800">
+      ✓ Task created: {{ createSuccess }}
+    </p>
+
+    <form v-if="showCreateForm" @submit.prevent="createTask" class="relative mb-6 mt-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
       <div class="mb-4">
         <label for="project" class="mb-1 block text-sm font-semibold text-gray-700">Project</label>
 
@@ -95,9 +112,60 @@
         </p>
       </div>
 
-      <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
-        {{ creating ? 'Creating...' : 'Create task' }}
-      </button>
+      <div class="mb-4">
+        <label class="mb-1 block text-sm font-semibold text-gray-700">Tags</label>
+        <div class="flex flex-wrap gap-2">
+          <label
+              v-for="tag in tags"
+              :key="tag.id"
+              class="inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+              :class="form.tag_ids.includes(tag.id) ? 'ring-2 ring-offset-1' : 'opacity-70'"
+              :style="tagChipStyle(tag)"
+          >
+            <input v-model="form.tag_ids" type="checkbox" :value="tag.id" class="sr-only">
+            {{ tag.name }}
+          </label>
+        </div>
+
+        <p v-if="tagCreateError" class="mt-1 text-sm text-red-600">
+          {{ tagCreateError }}
+        </p>
+
+        <div class="mt-2 flex max-w-sm items-center gap-2">
+          <input
+              v-model="newTagName"
+              type="text"
+              placeholder="New tag name"
+              @keyup.enter.prevent="addNewTag"
+              class="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+          >
+          <button
+              type="button"
+              :disabled="addingTag"
+              :aria-label="addingTag ? 'Adding tag...' : 'Add tag'"
+              :title="addingTag ? 'Adding tag...' : 'Add tag'"
+              @click="addNewTag"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-300 bg-white text-lg font-semibold leading-none text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+          >
+            {{ addingTag ? '…' : '+' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+          {{ creating ? 'Creating...' : 'Create task' }}
+        </button>
+
+        <button
+            type="button"
+            :disabled="creating"
+            @click="closeCreateForm"
+            class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+        >
+          Hide form
+        </button>
+      </div>
 
       <p v-if="createError" class="mt-3 text-sm text-red-600">
         {{ createError }}
@@ -105,7 +173,7 @@
     </form>
 
     <div class="mb-6 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" :class="isManager ? 'lg:grid-cols-6' : 'lg:grid-cols-5'">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" :class="isManager ? 'lg:grid-cols-7' : 'lg:grid-cols-6'">
         <div>
           <label for="filter-search" class="mb-1 block text-sm font-semibold text-gray-700">Search</label>
           <input
@@ -135,6 +203,16 @@
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="filter-tag" class="mb-1 block text-sm font-semibold text-gray-700">Tag</label>
+          <select id="filter-tag" v-model="filters.tag_id" @change="applyFilters" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none">
+            <option value="">All</option>
+            <option v-for="tag in tags" :key="tag.id" :value="String(tag.id)">
+              {{ tag.name }}
+            </option>
           </select>
         </div>
 
@@ -233,6 +311,14 @@
               >
                 {{ priorityLabel(task.priority) }}
               </span>
+              <span
+                  v-for="tag in task.tags"
+                  :key="tag.id"
+                  class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  :style="tagChipStyle(tag)"
+              >
+                {{ tag.name }}
+              </span>
             </span>
 
             <span v-if="task.project" class="text-gray-500">
@@ -327,6 +413,11 @@ import type {
   User,
   UsersResponse,
 } from '~/types/user'
+import type {
+  Tag,
+  TagResponse,
+  TagsResponse,
+} from '~/types/tag'
 import {
   badgeClass,
   dueBadge,
@@ -334,6 +425,7 @@ import {
   priorityLabel,
   statusChipClass,
   statusLabel,
+  tagChipStyle,
 } from '~/utils/taskDisplay'
 
 const { apiFetch, apiDownload } = useApi()
@@ -381,6 +473,8 @@ const error = ref('')
 
 const creating = ref(false)
 const createError = ref('')
+const createSuccess = ref('')
+const showCreateForm = ref(false)
 const validationErrors = ref<Record<string, string[]>>({})
 
 const currentPage = ref(1)
@@ -393,6 +487,7 @@ const form = reactive({
   status: 'pending',
   priority: 'medium',
   due_date: '',
+  tag_ids: [] as number[],
 })
 
 const filters = reactive({
@@ -402,10 +497,16 @@ const filters = reactive({
   due_from: '',
   due_to: '',
   user_id: '',
+  tag_id: '',
 })
 
 const allUsers = ref<User[]>([])
 const usersError = ref('')
+
+const tags = ref<Tag[]>([])
+const newTagName = ref('')
+const addingTag = ref(false)
+const tagCreateError = ref('')
 
 const exporting = ref(false)
 const exportError = ref('')
@@ -416,12 +517,59 @@ onMounted(async () => {
   await Promise.all([
     loadTasksWithFilters(),
     loadProjects(),
+    loadTags(),
   ])
 
   if (isManager.value) {
     await loadAllUsers()
   }
 })
+
+function openCreateForm() {
+  showCreateForm.value = true
+  createSuccess.value = ''
+}
+
+function closeCreateForm() {
+  showCreateForm.value = false
+  createSuccess.value = ''
+}
+
+async function loadTags() {
+  try {
+    const response = await apiFetch<TagsResponse>('/api/v1/tags')
+    tags.value = response.data
+  } catch {
+    tagCreateError.value = 'Failed to load tags.'
+  }
+}
+
+async function addNewTag() {
+  const name = newTagName.value.trim()
+
+  if (!name) {
+    return
+  }
+
+  addingTag.value = true
+  tagCreateError.value = ''
+
+  try {
+    const response = await apiFetch<TagResponse>('/api/v1/tags', {
+      method: 'POST',
+      body: { name },
+    })
+
+    tags.value.push(response.data)
+    tags.value.sort((a, b) => a.name.localeCompare(b.name))
+    form.tag_ids.push(response.data.id)
+    newTagName.value = ''
+  } catch (err: any) {
+    tagCreateError.value = err?.data?.message ?? 'Failed to add tag.'
+  } finally {
+    addingTag.value = false
+  }
+}
 
 async function exportTasks(format: 'csv' | 'json') {
   exporting.value = true
@@ -440,6 +588,10 @@ async function exportTasks(format: 'csv' | 'json') {
 
     if (filters.user_id) {
       params.set('user_id', filters.user_id)
+    }
+
+    if (filters.tag_id) {
+      params.set('tag_id', filters.tag_id)
     }
 
     if (filters.search.trim()) {
@@ -522,6 +674,10 @@ async function loadTasksWithFilters() {
       params.set('user_id', filters.user_id)
     }
 
+    if (filters.tag_id) {
+      params.set('tag_id', filters.tag_id)
+    }
+
     if (filters.search.trim()) {
       params.set('search', filters.search.trim())
     }
@@ -560,6 +716,7 @@ async function applyFilters() {
 async function createTask() {
   creating.value = true
   createError.value = ''
+  createSuccess.value = ''
   validationErrors.value = {}
 
   try {
@@ -572,6 +729,7 @@ async function createTask() {
         status: form.status,
         priority: form.priority,
         due_date: form.due_date || null,
+        tag_ids: form.tag_ids,
       },
     })
 
@@ -583,6 +741,10 @@ async function createTask() {
     form.status = 'pending'
     form.priority = 'medium'
     form.due_date = ''
+    form.tag_ids = []
+
+    createSuccess.value = response.data.title
+    showCreateForm.value = false
   } catch (err: any) {
     if (err?.status === 422 && err?.data?.errors) {
       validationErrors.value = err.data.errors

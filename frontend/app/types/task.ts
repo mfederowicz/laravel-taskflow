@@ -1,3 +1,5 @@
+import type { Tag } from './tag'
+
 export interface Comment {
     id: number
     body: string
@@ -46,6 +48,7 @@ export interface Task {
     } | null
     shared?: boolean
     ownership_history?: TaskOwnershipHistoryEntry[]
+    tags: Tag[]
     created_at: string
     updated_at: string
 }
