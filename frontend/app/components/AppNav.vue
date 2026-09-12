@@ -14,6 +14,10 @@
       Projects
     </NuxtLink>
 
+    <NuxtLink class="text-sm hover:text-blue-600" to="/calendar">
+      Calendar
+    </NuxtLink>
+
     <NuxtLink v-if="isManager" class="text-sm hover:text-blue-600" to="/users">
       Users
     </NuxtLink>

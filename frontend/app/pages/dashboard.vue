@@ -54,6 +54,28 @@
       </div>
 
       <div class="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-semibold text-gray-900">Calendar</h2>
+          <NuxtLink to="/calendar" class="text-sm text-blue-600 hover:underline">
+            Open calendar
+          </NuxtLink>
+        </div>
+
+        <p class="mt-1 text-sm text-gray-500">{{ monthLabel(currentYear, currentMonth) }}</p>
+
+        <div class="mt-3">
+          <CalendarGrid
+              :year="currentYear"
+              :month="currentMonth"
+              :tasks="tasks"
+              :selected-date="todayStr"
+              compact
+              @select="openCalendarDay"
+          />
+        </div>
+      </div>
+
+      <div class="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
         <h2 class="text-lg font-semibold text-gray-900">Tasks per tag</h2>
 
         <ul v-if="tagCounts.length" class="mt-4 divide-y divide-gray-100">
@@ -79,12 +101,22 @@
 import type { Task, TasksResponse } from '~/types/task'
 import type { ProjectsResponse } from '~/types/project'
 import { badgeClass, dueBadge, tagChipStyle } from '~/utils/taskDisplay'
+import { isoDate, monthLabel } from '~/utils/calendar'
 
 definePageMeta({
   middleware: 'auth',
 })
 
 const { apiFetch } = useApi()
+
+const now = new Date()
+const currentYear = now.getFullYear()
+const currentMonth = now.getMonth()
+const todayStr = isoDate(now.getFullYear(), now.getMonth(), now.getDate())
+
+function openCalendarDay(date: string) {
+  navigateTo(`/calendar?date=${date}`)
+}
 
 const loading = ref(true)
 const error = ref('')
