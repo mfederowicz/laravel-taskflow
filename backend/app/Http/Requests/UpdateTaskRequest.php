@@ -25,7 +25,8 @@ class UpdateTaskRequest extends FormRequest
                             ->from('project_members')
                             ->where('user_id', $userId)
                             ->whereIn('role', ['admin', 'editor']);
-                    });
+                    })
+                    ->whereNull('archived_at');
             })],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],

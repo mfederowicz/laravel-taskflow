@@ -18,6 +18,28 @@ class Project extends Model
         'description',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'archived_at' => 'datetime',
+        ];
+    }
+
+    public function isArchived(): bool
+    {
+        return $this->archived_at !== null;
+    }
+
+    public function markArchived(): void
+    {
+        $this->forceFill(['archived_at' => now()])->save();
+    }
+
+    public function markActive(): void
+    {
+        $this->forceFill(['archived_at' => null])->save();
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

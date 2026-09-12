@@ -29,6 +29,7 @@ class ProjectResource extends JsonResource
                 'name' => $this->user->name,
             ],
             'role' => $role,
+            'archived' => $this->archived_at !== null,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

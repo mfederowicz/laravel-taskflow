@@ -307,6 +307,7 @@ class TaskController extends Controller
                         $members->where('user_id', $user->id)
                             ->whereIn('role', ['admin', 'editor']);
                     });
-            });
+            })
+            ->whereNull('archived_at');
     }
 }

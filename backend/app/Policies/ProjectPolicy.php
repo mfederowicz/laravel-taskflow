@@ -78,11 +78,24 @@ class ProjectPolicy
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can archive the model.
+     *
+     * Platform managers, the project owner, and project admins may
+     * archive a project.
+     */
+    public function archive(User $user, Project $project): bool
+    {
+        return $user->isManager()
+            || $user->id === $project->user_id
+            || $project->isMemberAdmin($user);
+    }
+
+    /**
+     * Determine whether the user can restore the model from archive.
      */
     public function restore(User $user, Project $project): bool
     {
-        return false;
+        return $this->archive($user, $project);
     }
 
     /**
