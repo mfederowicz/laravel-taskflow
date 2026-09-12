@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ActivityType;
 use App\Enums\NotificationType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\TaskResource;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
+use App\Support\Activity;
 use App\Support\Export;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Database\Eloquent\Builder;
@@ -118,6 +120,14 @@ class TaskController extends Controller
 
         $task->tags()->sync($request->validated('tag_ids') ?? []);
 
+        Activity::record(
+            $task->project,
+            ActivityType::TaskCreated,
+            $request->user(),
+            ['task' => $task->title],
+            $task
+        );
+
         return response()->json([
             'data' => new TaskResource(
                 $task->load(['user', 'project', 'tags', 'ownershipHistories.performedBy',
@@ -149,6 +159,16 @@ class TaskController extends Controller
                 ->delete();
         }
 
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::TaskUpdated,
+                $request->user(),
+                ['task' => $task->title],
+                $task
+            );
+        }
+
         return new TaskResource(
             $task->load(['user', 'project', 'tags'])
         );
@@ -157,9 +177,19 @@ class TaskController extends Controller
     /**
      * Delete a task.
      */
-    public function destroy(Task $task): Response
+    public function destroy(Request $request, Task $task): Response
     {
         $this->authorize('delete', $task);
+
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::TaskDeleted,
+                $request->user(),
+                ['task' => $task->title],
+                $task
+            );
+        }
 
         $task->delete();
 
@@ -197,6 +227,7 @@ class TaskController extends Controller
 
         $toUserId = $request->validated('to_user_id');
         $performer = $request->user();
+        $fromName = $task->user->name;
 
         DB::transaction(function () use ($task, $toUserId, $performer, $request) {
             $fromUserId = $task->user_id;
@@ -210,6 +241,20 @@ class TaskController extends Controller
                 'note' => $request->validated('note'),
             ]);
         });
+
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::TaskTransferred,
+                $performer,
+                [
+                    'task' => $task->title,
+                    'from' => $fromName,
+                    'to' => User::find($toUserId)?->name ?? 'unknown',
+                ],
+                $task
+            );
+        }
 
         return new TaskResource(
             $task->load(['user', 'project', 'tags', 'ownershipHistories.performedBy',

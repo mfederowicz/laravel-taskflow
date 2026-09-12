@@ -55,6 +55,11 @@ class Project extends Model
         return $this->hasMany(ProjectMember::class);
     }
 
+    public function activities(): HasMany
+    {
+        return $this->hasMany(Activity::class);
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->members()
