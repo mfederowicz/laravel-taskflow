@@ -34,6 +34,7 @@ class TaskFactory extends Factory
                 'high',
             ]),
             'due_date' => fake()->optional()->date(),
+            'frequency' => null,
         ];
     }
 }

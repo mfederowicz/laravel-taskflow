@@ -106,6 +106,24 @@
           </div>
 
           <div>
+            <label for="edit-frequency" class="mb-1 block text-sm font-semibold text-gray-700">Repeat</label>
+            <select
+                id="edit-frequency"
+                v-model="editForm.frequency"
+                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">Does not repeat</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            <p v-if="updateValidationErrors.frequency" class="mt-1 text-sm text-red-600">
+              {{ updateValidationErrors.frequency[0] }}
+            </p>
+          </div>
+
+          <div>
             <label class="mb-1 block text-sm font-semibold text-gray-700">Tags</label>
             <div class="flex flex-wrap gap-2">
               <label
@@ -162,6 +180,14 @@
               {{ priorityLabel(task.priority) }}
             </span>
             <span
+                v-if="task.frequency"
+                class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                :class="recurrenceBadgeClass()"
+                :title="task.frequency"
+            >
+              ↻ {{ recurrenceLabel(task.frequency) }}
+            </span>
+            <span
                 v-if="dueBadge(task)"
                 class="rounded-full px-2.5 py-0.5 text-xs font-medium"
                 :class="badgeClass(task)"
@@ -184,6 +210,7 @@
             <span>Owner: {{ task.user.name }}</span>
             <span v-if="task.project">Project: {{ task.project.name }}</span>
             <span v-if="task.due_date">Due: {{ task.due_date }}</span>
+            <span v-if="task.frequency">Repeats: {{ recurrenceLabel(task.frequency) }}</span>
             <span>Created: {{ formatDate(task.created_at) }}</span>
             <span>Updated: {{ formatDate(task.updated_at) }}</span>
           </p>
@@ -425,6 +452,8 @@ import {
   formatDate,
   priorityChipClass,
   priorityLabel,
+  recurrenceBadgeClass,
+  recurrenceLabel,
   statusChipClass,
   statusLabel,
   tagChipStyle,
@@ -469,6 +498,7 @@ const editForm = reactive({
   status: 'pending',
   priority: 'medium',
   due_date: '',
+  frequency: '',
   tag_ids: [] as number[],
 })
 
@@ -685,6 +715,7 @@ function startEditing() {
   editForm.status = task.value.status
   editForm.priority = task.value.priority
   editForm.due_date = task.value.due_date ?? ''
+  editForm.frequency = task.value.frequency ?? ''
   editForm.tag_ids = task.value.tags.map((tag) => tag.id)
 
   updateError.value = ''
@@ -718,6 +749,7 @@ async function updateTask() {
           status: editForm.status,
           priority: editForm.priority,
           due_date: editForm.due_date || null,
+          frequency: editForm.frequency || null,
           tag_ids: editForm.tag_ids,
         },
       },

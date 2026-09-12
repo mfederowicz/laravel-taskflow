@@ -38,6 +38,7 @@ export interface Task {
     status: string
     priority: string
     due_date: string | null
+    frequency: string | null
     user: {
         id: number
         name: string
