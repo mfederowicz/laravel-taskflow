@@ -66,11 +66,14 @@ prev_tag_of() {
     fi
 }
 
-# pr_numbers <range...> -> deduped merge-PR numbers (merge-commit order) in the range
-pr_numbers() {
+# merge_prs <range...> -> "N <branch>" lines for merged PRs (merge-commit order,
+# deduped); the range is reachability-based (prevTag..newTag), so a PR merged on
+# that day appears exactly once even if its feature branch spans several days
+merge_prs() {
     git log --first-parent --merges --format=%s "$@" |
-        grep -oE 'Merge pull request #[0-9]+' |
-        grep -oE '[0-9]+$' |
+        grep -E '^Merge pull request #[0-9]+ from ' |
+        sed -E -e 's/^Merge pull request #([0-9]+) from ([^ ]+).*/\1 \2/' \
+               -e 's/^([0-9]+) [^ /]+\//\1 /' |
         awk '!seen[$0]++'
 }
 
@@ -101,11 +104,13 @@ write_notes() {
         echo "## Merged pull requests"
         echo
         n=0
-        while IFS= read -r pr; do
+        while read -r pr branch; do
             [[ -n "$pr" ]] || continue
-            printf -- "- [PR #%s](https://github.com/%s/pull/%s)\n" "$pr" "$SLUG" "$pr"
+            printf -- "- [PR #%s](https://github.com/%s/pull/%s)" "$pr" "$SLUG" "$pr"
+            [[ -n "$branch" ]] && printf -- " — \`%s\`" "$branch"
+            printf "\n"
             n=$((n + 1))
-        done < <(pr_numbers "$range")
+        done < <(merge_prs "$range")
         if [[ "$n" -eq 0 ]]; then
             echo "_No pull requests in this range._"
         fi
