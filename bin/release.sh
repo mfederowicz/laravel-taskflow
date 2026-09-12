@@ -161,12 +161,12 @@ release_day() {
     echo "Push the tag, then publish the release (no gh needed):"
     echo "  git push $REMOTE $date"
     echo "  curl -X POST https://api.github.com/repos/$SLUG/releases \\"
-    echo "    -H \"Authorization: Bearer \$GH_TOKEN\" \\"
+    echo "    -H \"Authorization: Bearer \$GITHUB_TOKEN\" \\"
     echo "    -H \"Accept: application/vnd.github+json\" \\"
     echo "    --data-binary @$RELEASES_DIR/$date.json"
     echo
     echo "Notes: $RELEASES_DIR/$date.md   API payload: $RELEASES_DIR/$date.json"
-    echo "Set GH_TOKEN to a token with 'repo' scope first."
+    echo "Set GITHUB_TOKEN to a token with 'repo' scope first."
     echo
 }
 
