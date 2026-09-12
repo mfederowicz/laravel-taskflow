@@ -253,6 +253,39 @@
           </li>
         </ul>
       </div>
+
+      <div
+          class="mt-6 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="mt-0 text-lg font-bold text-gray-900">Activity</h2>
+        </div>
+
+        <p v-if="activitiesLoading" class="mt-3 text-sm text-gray-500">
+          Loading activity...
+        </p>
+
+        <p v-else-if="activitiesError" class="mt-3 text-sm text-red-600">
+          {{ activitiesError }}
+        </p>
+
+        <p v-else-if="!activities.length" class="mt-3 text-sm text-gray-500">
+          No activity recorded for this project.
+        </p>
+
+        <ul v-else class="mt-4 space-y-3">
+          <li
+              v-for="activity in activities"
+              :key="activity.id"
+              class="rounded-lg bg-gray-50 px-4 py-3"
+          >
+            <div class="flex flex-wrap items-baseline gap-x-2">
+              <span class="text-sm text-gray-900">{{ activity.message }}</span>
+              <span class="text-xs text-gray-400">{{ timeAgo(activity.created_at) }}</span>
+            </div>
+          </li>
+        </ul>
+      </div>
     </template>
   </main>
 </template>
@@ -266,6 +299,7 @@ useHead({
   title: 'Project',
 })
 
+import type { Activity, ActivitiesResponse } from '~/types/activity'
 import type { Project, ProjectMember } from '~/types/project'
 import type { Task } from '~/types/task'
 import type { User } from '~/types/user'
@@ -308,6 +342,10 @@ const memberErrors = ref<Record<number, string>>({})
 const tasks = ref<Task[]>([])
 const tasksLoading = ref(true)
 const tasksError = ref('')
+
+const activities = ref<Activity[]>([])
+const activitiesLoading = ref(true)
+const activitiesError = ref('')
 
 const canManageMembers = computed(() =>
     project.value?.role === 'owner' || project.value?.role === 'admin'
@@ -369,7 +407,7 @@ onMounted(async () => {
 
   pending.value = false
 
-  await Promise.all([loadMembers(), loadTasks()])
+  await Promise.all([loadMembers(), loadTasks(), loadActivities()])
 })
 
 function roleLabel(role: string): string {
@@ -515,6 +553,23 @@ async function loadTasks() {
     tasksError.value = err?.data?.message ?? 'Failed to load tasks.'
   } finally {
     tasksLoading.value = false
+  }
+}
+
+async function loadActivities() {
+  activitiesLoading.value = true
+  activitiesError.value = ''
+
+  try {
+    const response = await apiFetch<ActivitiesResponse>(
+        `/api/v1/projects/${projectId.value}/activities`,
+    )
+
+    activities.value = response.data
+  } catch (err: any) {
+    activitiesError.value = err?.data?.message ?? 'Failed to load activity.'
+  } finally {
+    activitiesLoading.value = false
   }
 }
 </script>

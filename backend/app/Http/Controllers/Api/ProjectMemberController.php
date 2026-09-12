@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ActivityType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjectMemberRequest;
 use App\Http\Requests\UpdateProjectMemberRequest;
 use App\Http\Resources\ProjectMemberResource;
 use App\Models\Project;
 use App\Models\ProjectMember;
+use App\Support\Activity;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,8 +53,17 @@ class ProjectMemberController extends Controller
             'role' => $validated['role'],
         ]);
 
+        $member->load('user');
+
+        Activity::record(
+            $project,
+            ActivityType::MemberAdded,
+            $request->user(),
+            ['user' => $member->user->name, 'role' => $validated['role']]
+        );
+
         return response()->json([
-            'data' => new ProjectMemberResource($member->load('user')),
+            'data' => new ProjectMemberResource($member),
         ], 201);
     }
 
@@ -68,9 +79,22 @@ class ProjectMemberController extends Controller
     ): ProjectMemberResource {
         $this->authorize('update', $member);
 
+        $previousRole = $member->role;
         $member->update($request->validated());
+        $member->load('user');
 
-        return new ProjectMemberResource($member->load('user'));
+        Activity::record(
+            $project,
+            ActivityType::MemberRoleChanged,
+            $request->user(),
+            [
+                'user' => $member->user->name,
+                'from' => $previousRole->value,
+                'to' => $member->role->value,
+            ]
+        );
+
+        return new ProjectMemberResource($member);
     }
 
     /**
@@ -82,7 +106,15 @@ class ProjectMemberController extends Controller
     {
         $this->authorize('delete', $member);
 
+        $memberName = $member->user->name;
         $member->delete();
+
+        Activity::record(
+            $project,
+            ActivityType::MemberRemoved,
+            $request->user(),
+            ['user' => $memberName]
+        );
 
         return response()->noContent();
     }

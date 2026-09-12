@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\NotificationController;
@@ -95,6 +96,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/projects/{project}/members', [ProjectMemberController::class, 'store']);
         Route::patch('/projects/{project}/members/{member}', [ProjectMemberController::class, 'update'])->scopeBindings();
         Route::delete('/projects/{project}/members/{member}', [ProjectMemberController::class, 'destroy'])->scopeBindings();
+
+        // Project activity feed
+        Route::get('/projects/{project}/activities', [ActivityController::class, 'index']);
 
         // Comments
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);

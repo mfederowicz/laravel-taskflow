@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ActivityType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Http\Resources\CommentResource;
 use App\Models\Comment;
 use App\Models\Task;
+use App\Support\Activity;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,6 +48,16 @@ class CommentController extends Controller
             ...$request->validated(),
         ]);
 
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::CommentAdded,
+                $request->user(),
+                ['task' => $task->title],
+                $task
+            );
+        }
+
         return response()->json([
             'data' => new CommentResource(
                 $comment->load('user')
@@ -75,6 +87,16 @@ class CommentController extends Controller
 
         $comment->update($request->validated());
 
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::CommentUpdated,
+                $request->user(),
+                ['task' => $task->title],
+                $task
+            );
+        }
+
         return new CommentResource($comment->load('user'));
     }
 
@@ -84,6 +106,16 @@ class CommentController extends Controller
     public function destroy(Request $request, Task $task, Comment $comment): Response
     {
         $this->authorize('delete', $comment);
+
+        if ($task->project_id !== null) {
+            Activity::record(
+                $task->project,
+                ActivityType::CommentDeleted,
+                $request->user(),
+                ['task' => $task->title],
+                $task
+            );
+        }
 
         $comment->delete();
 

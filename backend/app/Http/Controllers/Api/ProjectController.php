@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\ActivityType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
+use App\Support\Activity;
 use App\Support\Export;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\JsonResponse;
@@ -114,6 +116,13 @@ class ProjectController extends Controller
             $request->validated()
         );
 
+        Activity::record(
+            $project,
+            ActivityType::ProjectCreated,
+            $request->user(),
+            ['name' => $project->name]
+        );
+
         return response()->json([
             'data' => new ProjectResource($project->load(['user', 'members'])),
         ], 201);
@@ -139,6 +148,20 @@ class ProjectController extends Controller
         $this->authorize('update', $project);
 
         $project->update($request->validated());
+
+        $fields = array_keys(array_intersect_key(
+            $project->getChanges(),
+            array_flip(['name', 'description'])
+        ));
+
+        if ($fields !== []) {
+            Activity::record(
+                $project,
+                ActivityType::ProjectUpdated,
+                $request->user(),
+                ['fields' => $fields]
+            );
+        }
 
         return new ProjectResource($project->load(['user', 'members']));
     }
@@ -167,6 +190,13 @@ class ProjectController extends Controller
 
         $project->markArchived();
 
+        Activity::record(
+            $project,
+            ActivityType::ProjectArchived,
+            $request->user(),
+            ['name' => $project->name]
+        );
+
         return new ProjectResource($project->load(['user', 'members']));
     }
 
@@ -178,6 +208,13 @@ class ProjectController extends Controller
         $this->authorize('restore', $project);
 
         $project->markActive();
+
+        Activity::record(
+            $project,
+            ActivityType::ProjectRestored,
+            $request->user(),
+            ['name' => $project->name]
+        );
 
         return new ProjectResource($project->load(['user', 'members']));
     }
