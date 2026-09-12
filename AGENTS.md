@@ -154,7 +154,7 @@ Single source of truth for every known issue and fix in this repo.
    - `OPEN` — confirmed present in current `main`.
    - `FIXED` — fix committed *and merged into main* (state the commit/PR).
    - `VERIFIED` — a test or manual repro confirms the fix actually holds.
-5. Reference the issue ID in commit messages, e.g. `fix: B9 make oauth/client auth'd (closes #B9)`.
+5. Reference the issue ID in commit messages with a bare `#ID` suffix, e.g. `fix: make oauth/client auth'd (#B9)` — never `(closes #ID)`.
 6. `main` is the only truth; a fix counts as done only once merged into `main`.
 
 ## Legend
@@ -187,7 +187,7 @@ letter for a new category); append an `OPEN` row to the matching Open table with
 - Create feature branches with the `{task-id}-{branch-slug}` format, e.g. `B41-token-expiration` or `R9-task-search`; the slug is a short kebab-case summary of the work.
 - Create the feature branch before starting any work; use a separate branch per task/issue when multiple are done in one session.
 - Do not push branches — the user handles pushing and PR creation.
-- Reference the task/issue ID in commit messages (`fix: ... (closes #B41)`, `feat: ... (#R9)`), matching the ledger convention.
+- Reference the task/issue ID in commit messages with a bare `#ID` suffix (e.g. `fix: ... (#B41)`, `feat: ... (#R27)`); do not add `(closes #ID)` — a branch's last commit may be an unplanned fix, so the `closes` wording misleads and makes the log inconsistent.
 - Do not commit generated/ignored files: `.env`, `backend/storage/oauth-*.key`, `node_modules`, `vendor`, `.nuxt`, `.output`.
 - Keep `.env.example` in sync when adding environment variables.
 - Follow the existing patterns when adding routes, controllers, requests, resources, and tests.
