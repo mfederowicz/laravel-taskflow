@@ -9,6 +9,7 @@ export interface Project {
         name: string
     }
     role: ProjectRole
+    archived: boolean
     created_at: string
     updated_at: string
 }

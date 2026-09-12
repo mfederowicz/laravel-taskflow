@@ -19,7 +19,31 @@
           >
             {{ roleLabel(project.role) }}
           </span>
+
+          <span
+              v-if="project.archived"
+              class="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-700"
+          >
+            Archived
+          </span>
+
+          <button
+              v-if="canArchiveProject"
+              type="button"
+              :disabled="togglingArchive"
+              class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+              @click="toggleArchive"
+          >
+            {{ togglingArchive ? 'Saving...' : project.archived ? 'Restore project' : 'Archive project' }}
+          </button>
         </div>
+
+        <p
+            v-if="project.archived"
+            class="mt-3 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-700"
+        >
+          This project is archived. Tasks stay visible but new tasks can no longer be created.
+        </p>
 
         <p v-if="project.description" class="mt-2 text-sm text-gray-600">
           {{ project.description }}
@@ -288,6 +312,38 @@ const tasksError = ref('')
 const canManageMembers = computed(() =>
     project.value?.role === 'owner' || project.value?.role === 'admin'
 )
+
+const canArchiveProject = computed(() =>
+    project.value?.role === 'owner' || project.value?.role === 'admin'
+)
+
+const togglingArchive = ref(false)
+
+async function toggleArchive() {
+  if (!project.value) {
+    return
+  }
+
+  togglingArchive.value = true
+  error.value = ''
+
+  const action = project.value.archived ? 'restore' : 'archive'
+
+  try {
+    const response = await apiFetch<{ data: Project }>(
+        `/api/v1/projects/${project.value.id}/${action}`,
+        {
+          method: 'POST',
+        }
+    )
+
+    project.value = response.data
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to update project archive state.'
+  } finally {
+    togglingArchive.value = false
+  }
+}
 
 onMounted(async () => {
   if (Number.isNaN(projectId.value)) {

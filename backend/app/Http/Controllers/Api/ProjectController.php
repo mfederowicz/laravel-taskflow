@@ -20,7 +20,8 @@ class ProjectController extends Controller
 {
     /**
      * List the authenticated user's projects: those they own plus any
-     * project they belong to as a member.
+     * project they belong to as a member. Archived projects are hidden by
+     * default; pass `?archived=1` to list only archived projects.
      */
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -34,6 +35,11 @@ class ProjectController extends Controller
                         $members->where('user_id', $user->id);
                     });
             })
+            ->when(
+                $request->boolean('archived'),
+                fn ($query) => $query->whereNotNull('archived_at'),
+                fn ($query) => $query->whereNull('archived_at')
+            )
             ->latest()
             ->paginate(10);
 
@@ -58,6 +64,11 @@ class ProjectController extends Controller
                         $members->where('user_id', $user->id);
                     });
             })
+            ->when(
+                $request->boolean('archived'),
+                fn ($query) => $query->whereNotNull('archived_at'),
+                fn ($query) => $query->whereNull('archived_at')
+            )
             ->latest()
             ->get();
 
@@ -144,5 +155,30 @@ class ProjectController extends Controller
         $project->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Archive a project. Archived projects are hidden from the default
+     * project index but remain accessible by id.
+     */
+    public function archive(Request $request, Project $project): ProjectResource
+    {
+        $this->authorize('archive', $project);
+
+        $project->markArchived();
+
+        return new ProjectResource($project->load(['user', 'members']));
+    }
+
+    /**
+     * Restore an archived project to the active index.
+     */
+    public function restore(Request $request, Project $project): ProjectResource
+    {
+        $this->authorize('restore', $project);
+
+        $project->markActive();
+
+        return new ProjectResource($project->load(['user', 'members']));
     }
 }

@@ -60,6 +60,18 @@
         Export JSON
       </button>
 
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        <span class="font-semibold">View:</span>
+        <select
+            v-model="showArchived"
+            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            @change="switchArchivedFilter"
+        >
+          <option :value="false">Active</option>
+          <option :value="true">Archived</option>
+        </select>
+      </label>
+
       <p v-if="exportError" class="text-sm text-red-600">
         {{ exportError }}
       </p>
@@ -139,6 +151,13 @@
               {{ roleLabel(project.role) }}
             </span>
 
+            <span
+                v-if="project.archived"
+                class="ml-2 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700"
+            >
+              Archived
+            </span>
+
             <span v-if="project.description" class="text-gray-600">
             — {{ project.description }}
           </span>
@@ -168,6 +187,16 @@
                 class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
             >
               Delete
+            </button>
+
+            <button
+                v-if="canArchiveProject(project)"
+                type="button"
+                :disabled="togglingArchive === project.id"
+                @click="toggleArchive(project)"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              {{ togglingArchive === project.id ? 'Saving...' : project.archived ? 'Restore' : 'Archive' }}
             </button>
           </div>
 
@@ -247,6 +276,9 @@ const updateValidationErrors = ref<Record<string, string[]>>({})
 const exporting = ref(false)
 const exportError = ref('')
 
+const showArchived = ref(false)
+const togglingArchive = ref<number | null>(null)
+
 onMounted(async () => {
   await loadProjects()
 })
@@ -258,6 +290,11 @@ async function loadProjects() {
   try {
     const params = new URLSearchParams()
     params.set('page', String(currentPage.value))
+
+    if (showArchived.value) {
+      params.set('archived', '1')
+    }
+
     const query = params.toString()
 
     const response = await apiFetch<ProjectsResponse>(
@@ -274,13 +311,25 @@ async function loadProjects() {
   }
 }
 
+function switchArchivedFilter() {
+  currentPage.value = 1
+  loadProjects()
+}
+
 async function exportProjects(format: 'csv' | 'json') {
   exporting.value = true
   exportError.value = ''
 
+  const params = new URLSearchParams()
+  params.set('format', format)
+
+  if (showArchived.value) {
+    params.set('archived', '1')
+  }
+
   try {
     await apiDownload(
-        `/api/v1/projects/export?format=${format}`,
+        `/api/v1/projects/export?${params.toString()}`,
         `projects.${format}`,
     )
   } catch (err: any) {
@@ -377,8 +426,40 @@ function canEditProject(project: Project): boolean {
   return project.role === 'owner' || project.role === 'admin'
 }
 
+function canArchiveProject(project: Project): boolean {
+  return project.role === 'owner' || project.role === 'admin'
+}
+
 function canDeleteProject(project: Project): boolean {
   return project.role === 'owner'
+}
+
+async function toggleArchive(project: Project) {
+  togglingArchive.value = project.id
+  error.value = ''
+
+  const action = project.archived ? 'restore' : 'archive'
+
+  try {
+    const response = await apiFetch<ProjectResponse>(
+        `/api/v1/projects/${project.id}/${action}`,
+        {
+          method: 'POST',
+        }
+    )
+
+    const index = projects.value.findIndex(
+        (item: Project) => item.id === project.id
+    )
+
+    if (index !== -1) {
+      projects.value[index] = response.data
+    }
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to update project archive state.'
+  } finally {
+    togglingArchive.value = null
+  }
 }
 
 async function updateProject() {

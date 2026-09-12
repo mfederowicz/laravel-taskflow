@@ -25,7 +25,8 @@ class StoreTaskRequest extends FormRequest
                             ->from('project_members')
                             ->where('user_id', $userId)
                             ->whereIn('role', ['admin', 'editor']);
-                    });
+                    })
+                    ->whereNull('archived_at');
             })],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
