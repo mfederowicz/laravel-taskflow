@@ -15,6 +15,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Support\Activity;
 use App\Support\Export;
+use App\Support\Recurrence;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -73,6 +74,7 @@ class TaskController extends Controller
             $task->status,
             $task->priority,
             $task->due_date,
+            $task->frequency,
             $task->project?->name,
             $task->user->name,
             $task->tags->map(fn ($tag) => $tag->name)->implode(', '),
@@ -82,7 +84,7 @@ class TaskController extends Controller
 
         $csv = Export::csv([
             'id', 'title', 'description', 'status', 'priority', 'due_date',
-            'project', 'owner', 'tags', 'created_at', 'updated_at',
+            'frequency', 'project', 'owner', 'tags', 'created_at', 'updated_at',
         ], $rows);
 
         return response($csv, 200)
@@ -110,6 +112,7 @@ class TaskController extends Controller
             'status' => $validated['status'],
             'priority' => $validated['priority'],
             'due_date' => $validated['due_date'] ?? null,
+            'frequency' => $validated['frequency'] ?? null,
         ]);
 
         $task->ownershipHistories()->create([
@@ -157,6 +160,8 @@ class TaskController extends Controller
                     NotificationType::TaskOverdue->value,
                 ])
                 ->delete();
+
+            $this->spawnRecurringOccurrence($task, $request->user());
         }
 
         if ($task->project_id !== null) {
@@ -269,6 +274,52 @@ class TaskController extends Controller
                 'history',
                 array_map('trim', explode(',', (string) $request->string('with')))
             );
+    }
+
+    /**
+     * Materialize the next occurrence of a recurring task.
+     *
+     * Called when a task with a `frequency` transitions to completed: a clone
+     * with the same parameters is created for the next span, keeping the
+     * current owner, project, and tags. The clone keeps the frequency, so the
+     * series repeats on its next completion.
+     */
+    private function spawnRecurringOccurrence(Task $task, User $performer): void
+    {
+        if (! $task->isRecurring() || $task->due_date === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($task, $performer) {
+            $clone = Task::create([
+                'user_id' => $task->user_id,
+                'project_id' => $task->project_id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'status' => 'pending',
+                'priority' => $task->priority,
+                'due_date' => Recurrence::advanceDate($task->frequency, $task->due_date),
+                'frequency' => $task->frequency,
+            ]);
+
+            $clone->tags()->sync($task->tags()->pluck('tags.id')->all());
+
+            $clone->ownershipHistories()->create([
+                'performed_by' => $performer->id,
+                'from_user_id' => null,
+                'to_user_id' => $task->user_id,
+            ]);
+
+            if ($clone->project_id !== null) {
+                Activity::record(
+                    $clone->project,
+                    ActivityType::TaskCreated,
+                    $performer,
+                    ['task' => $clone->title],
+                    $clone
+                );
+            }
+        });
     }
 
     /**

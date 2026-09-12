@@ -32,7 +32,8 @@ class StoreTaskRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:pending,in_progress,completed'],
             'priority' => ['required', 'in:low,medium,high'],
-            'due_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date', Rule::requiredIf($this->filled('frequency'))],
+            'frequency' => ['nullable', 'in:daily,weekly,monthly,yearly'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'distinct', Rule::exists('tags', 'id')],
         ];

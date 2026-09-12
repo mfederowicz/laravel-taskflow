@@ -127,6 +127,21 @@ function tagChipStyle(tag: Taggable): Record<string, string> {
     }
 }
 
+const RECURRENCE_LABELS: Record<string, string> = {
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly',
+}
+
+function recurrenceLabel(frequency: string | null): string {
+    return frequency ? RECURRENCE_LABELS[frequency] ?? frequency : ''
+}
+
+function recurrenceBadgeClass(): string {
+    return 'bg-purple-100 text-purple-700'
+}
+
 export {
     dueBadge,
     badgeClass,
@@ -136,4 +151,6 @@ export {
     priorityChipClass,
     formatDate,
     tagChipStyle,
+    recurrenceLabel,
+    recurrenceBadgeClass,
 }

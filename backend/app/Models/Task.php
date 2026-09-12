@@ -20,7 +20,13 @@ class Task extends Model
         'status',
         'priority',
         'due_date',
+        'frequency',
     ];
+
+    public function isRecurring(): bool
+    {
+        return in_array($this->frequency, ['daily', 'weekly', 'monthly', 'yearly'], true);
+    }
 
     public function user(): BelongsTo
     {

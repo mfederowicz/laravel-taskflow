@@ -113,6 +113,24 @@
       </div>
 
       <div class="mb-4">
+        <label for="frequency" class="mb-1 block text-sm font-semibold text-gray-700">Repeat</label>
+        <select
+            id="frequency"
+            v-model="form.frequency"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">Does not repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+        <p v-if="validationErrors.frequency" class="mt-1 text-sm text-red-600">
+          {{ validationErrors.frequency[0] }}
+        </p>
+      </div>
+
+      <div class="mb-4">
         <label class="mb-1 block text-sm font-semibold text-gray-700">Tags</label>
         <div class="flex flex-wrap gap-2">
           <label
@@ -312,6 +330,14 @@
                 {{ priorityLabel(task.priority) }}
               </span>
               <span
+                  v-if="task.frequency"
+                  class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+                  :class="recurrenceBadgeClass()"
+                  :title="task.frequency"
+              >
+                ↻ {{ recurrenceLabel(task.frequency) }}
+              </span>
+              <span
                   v-for="tag in task.tags"
                   :key="tag.id"
                   class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -423,6 +449,8 @@ import {
   dueBadge,
   priorityChipClass,
   priorityLabel,
+  recurrenceBadgeClass,
+  recurrenceLabel,
   statusChipClass,
   statusLabel,
   tagChipStyle,
@@ -487,6 +515,7 @@ const form = reactive({
   status: 'pending',
   priority: 'medium',
   due_date: '',
+  frequency: '',
   tag_ids: [] as number[],
 })
 
@@ -729,6 +758,7 @@ async function createTask() {
         status: form.status,
         priority: form.priority,
         due_date: form.due_date || null,
+        frequency: form.frequency || null,
         tag_ids: form.tag_ids,
       },
     })
@@ -741,6 +771,7 @@ async function createTask() {
     form.status = 'pending'
     form.priority = 'medium'
     form.due_date = ''
+    form.frequency = ''
     form.tag_ids = []
 
     createSuccess.value = response.data.title
