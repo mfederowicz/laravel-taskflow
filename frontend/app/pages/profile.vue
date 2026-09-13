@@ -37,6 +37,51 @@
             {{ validationErrors.email[0] }}
           </p>
         </div>
+
+        <div class="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <h2 class="mt-0 text-sm font-semibold text-gray-900">Security question</h2>
+          <p class="mt-1 text-xs text-gray-500">
+            Used to reset your password when you forget it. Pick a question only you can answer.
+          </p>
+
+          <div class="mt-3">
+            <label for="profile-security-question" class="mb-1 block text-sm font-semibold text-gray-700">Question</label>
+            <input
+                id="profile-security-question"
+                v-model="form.security_question"
+                type="text"
+                maxlength="255"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+            <p v-if="validationErrors.security_question" class="mt-1 text-xs text-red-600">
+              {{ validationErrors.security_question[0] }}
+            </p>
+          </div>
+
+          <div class="mt-3">
+            <label for="profile-security-answer" class="mb-1 block text-sm font-semibold text-gray-700">Answer</label>
+            <input
+                id="profile-security-answer"
+                v-model="form.security_answer"
+                type="password"
+                autocomplete="new-password"
+                placeholder="Answer to the question above"
+                class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+            <p v-if="validationErrors.security_answer" class="mt-1 text-xs text-red-600">
+              {{ validationErrors.security_answer[0] }}
+            </p>
+          </div>
+
+          <label class="mt-3 flex items-center gap-2 text-sm text-gray-700">
+            <input
+                v-model="form.clear_security_question"
+                type="checkbox"
+                class="rounded border-gray-300"
+            >
+            Remove the security question
+          </label>
+        </div>
       </div>
 
       <p v-if="successMessage" class="mt-4 text-sm text-green-600">
@@ -77,6 +122,9 @@ const validationErrors = ref<Record<string, string[]>>({})
 const form = reactive({
   name: '',
   email: '',
+  security_question: '',
+  security_answer: '',
+  clear_security_question: false,
 })
 
 onMounted(async () => {
@@ -99,11 +147,20 @@ async function saveProfile() {
   try {
     const response = await apiFetch<UserResponse>('/api/v1/user/profile', {
       method: 'PUT',
-      body: { ...form },
+      body: {
+        name: form.name,
+        email: form.email,
+        security_question: form.security_question || null,
+        security_answer: form.security_answer || null,
+        clear_security_question: form.clear_security_question,
+      },
     })
 
     setProfile(response.data)
     successMessage.value = 'Profile updated.'
+    form.security_question = ''
+    form.security_answer = ''
+    form.clear_security_question = false
   } catch (err: any) {
     if (err?.status === 422 && err?.data?.errors) {
       validationErrors.value = err.data.errors

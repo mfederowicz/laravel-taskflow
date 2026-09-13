@@ -24,11 +24,15 @@ class User extends Authenticatable implements JWTSubject
         'password',
         'role',
         'status',
+        'security_question',
+        'security_answer',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'security_question',
+        'security_answer',
     ];
 
     /**
@@ -43,6 +47,7 @@ class User extends Authenticatable implements JWTSubject
             'password' => 'hashed',
             'role' => UserRole::class,
             'status' => UserStatus::class,
+            'security_answer' => 'hashed',
         ];
     }
 

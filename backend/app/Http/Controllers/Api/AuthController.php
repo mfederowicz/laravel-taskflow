@@ -40,6 +40,8 @@ class AuthController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => $validated['password'],
+            'security_question' => $validated['security_question'] ?? null,
+            'security_answer' => $validated['security_answer'] ?? null,
         ]);
 
         $token = $user->createToken('api')->plainTextToken;
@@ -267,7 +269,18 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        $user->update($request->validated());
+        $data = $request->validated();
+
+        if (! empty($data['clear_security_question'])) {
+            $data['security_question'] = null;
+            $data['security_answer'] = null;
+        } elseif (empty($data['security_question'])) {
+            unset($data['security_question'], $data['security_answer']);
+        }
+
+        unset($data['clear_security_question']);
+
+        $user->update($data);
 
         return response()->json([
             'data' => $user->fresh(),
