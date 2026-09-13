@@ -197,6 +197,9 @@
 
 
 <script setup lang="ts">
+useHead({
+  title: 'Login',
+})
 import { navigateTo } from '#app'
 import type { User } from '~/types/user'
 
