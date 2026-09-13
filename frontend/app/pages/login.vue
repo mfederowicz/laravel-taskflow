@@ -26,6 +26,7 @@
               id="email"
               v-model="email"
               type="email"
+              autocomplete="username"
               required
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
@@ -68,6 +69,7 @@
                 id="forgot-email"
                 v-model="forgotEmail"
                 type="email"
+                autocomplete="username"
                 required
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
