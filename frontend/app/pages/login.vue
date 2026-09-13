@@ -37,6 +37,7 @@
               id="password"
               v-model="password"
               type="password"
+              autocomplete="current-password"
               required
               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           >
@@ -105,6 +106,7 @@
                 id="forgot-new-password"
                 v-model="forgotPassword"
                 type="password"
+                autocomplete="new-password"
                 required
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
@@ -116,6 +118,7 @@
                 id="forgot-new-password-confirm"
                 v-model="forgotPasswordConfirmation"
                 type="password"
+                autocomplete="new-password"
                 required
                 class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             >
