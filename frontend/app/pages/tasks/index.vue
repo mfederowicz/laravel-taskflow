@@ -495,6 +495,18 @@ const membersLoading = ref(false)
 
 const { listMembers } = useProjectMembers()
 
+const form = reactive({
+  project_id: '',
+  user_id: '',
+  title: '',
+  description: '',
+  status: 'pending',
+  priority: 'medium',
+  due_date: '',
+  frequency: '',
+  tag_ids: [] as number[],
+})
+
 const selectedCreateProject = computed(() =>
     creatableProjects.value.find(
         (project) => String(project.id) === form.project_id
@@ -595,18 +607,6 @@ const validationErrors = ref<Record<string, string[]>>({})
 
 const currentPage = ref(1)
 const lastPage = ref(1)
-
-const form = reactive({
-  project_id: '',
-  user_id: '',
-  title: '',
-  description: '',
-  status: 'pending',
-  priority: 'medium',
-  due_date: '',
-  frequency: '',
-  tag_ids: [] as number[],
-})
 
 const filters = reactive({
   status: '',
