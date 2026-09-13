@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\ActivityController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CommentController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\ProjectController;
@@ -42,6 +43,10 @@ Route::prefix('v1')->group(function () {
         ->middleware('throttle:10,1');
     Route::post('/sanctum/refresh', [AuthController::class, 'refreshSanctum'])
         ->middleware('throttle:10,1');
+    Route::post('/forgot-password/challenge', [ForgotPasswordController::class, 'challenge'])
+        ->middleware('throttle:10,1');
+    Route::post('/forgot-password/reset', [ForgotPasswordController::class, 'reset'])
+        ->middleware('throttle:5,1');
 
     Route::middleware(['auth.multi', 'user.active'])->group(function () {
 
