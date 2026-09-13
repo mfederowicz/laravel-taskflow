@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ProjectResource extends JsonResource
+class OrganizationResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,20 +16,19 @@ class ProjectResource extends JsonResource
     {
         $user = $request->user();
 
+        $role = $this->owner_id === $user?->id
+            ? 'owner'
+            : ($this->members?->firstWhere('user_id', $user?->id)?->role->value ?? 'viewer');
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'description' => $this->description,
-            'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
+            'owner' => [
+                'id' => $this->owner->id,
+                'name' => $this->owner->name,
             ],
-            'organization' => $this->whenLoaded('organization', fn () => [
-                'id' => $this->organization->id,
-                'name' => $this->organization->name,
-            ]),
-            'role' => $this->effectiveRole($user),
-            'archived' => $this->archived_at !== null,
+            'role' => $role,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

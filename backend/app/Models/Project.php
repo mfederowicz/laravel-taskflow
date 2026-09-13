@@ -14,6 +14,7 @@ class Project extends Model
 
     protected $fillable = [
         'user_id',
+        'organization_id',
         'name',
         'description',
     ];
@@ -43,6 +44,11 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 
     public function tasks(): HasMany
@@ -79,5 +85,32 @@ class Project extends Model
     public function isMemberAdmin(User $user): bool
     {
         return $this->getMemberRole($user) === ProjectMemberRole::Admin;
+    }
+
+    /**
+     * Resolve the user's effective access level to the project.
+     *
+     * Precedence: the project owner, then an explicit project member role,
+     * then the user's organization membership when the project belongs to an
+     * organization, otherwise null (no access).
+     *
+     * @return 'owner'|'admin'|'editor'|'viewer'|null
+     */
+    public function effectiveRole(User $user): ?string
+    {
+        if ($this->user_id === $user->id) {
+            return 'owner';
+        }
+
+        if ($this->getMemberRole($user) === null && $this->organization_id !== null) {
+            return $this->organization?->getMemberRole($user)?->value;
+        }
+
+        return $this->getMemberRole($user)?->value;
+    }
+
+    public function hasAccess(User $user): bool
+    {
+        return $this->effectiveRole($user) !== null;
     }
 }

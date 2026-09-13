@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\CommentController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
+use App\Http\Controllers\Api\OrganizationController;
+use App\Http\Controllers\Api\OrganizationMemberController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectMemberController;
 use App\Http\Controllers\Api\TagController;
@@ -104,6 +106,19 @@ Route::prefix('v1')->group(function () {
 
         // Project activity feed
         Route::get('/projects/{project}/activities', [ActivityController::class, 'index']);
+
+        // Organizations
+        Route::get('/organizations', [OrganizationController::class, 'index']);
+        Route::post('/organizations', [OrganizationController::class, 'store']);
+        Route::get('/organizations/{organization}', [OrganizationController::class, 'show']);
+        Route::put('/organizations/{organization}', [OrganizationController::class, 'update']);
+        Route::delete('/organizations/{organization}', [OrganizationController::class, 'destroy']);
+
+        // Organization members
+        Route::get('/organizations/{organization}/members', [OrganizationMemberController::class, 'index']);
+        Route::post('/organizations/{organization}/members', [OrganizationMemberController::class, 'store']);
+        Route::patch('/organizations/{organization}/members/{member}', [OrganizationMemberController::class, 'update'])->scopeBindings();
+        Route::delete('/organizations/{organization}/members/{member}', [OrganizationMemberController::class, 'destroy'])->scopeBindings();
 
         // Comments
         Route::get('/tasks/{task}/comments', [CommentController::class, 'index']);

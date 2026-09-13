@@ -10,9 +10,9 @@ class ProjectPolicy
     /**
      * Determine whether the user can view any models.
      *
-     * Any authenticated user may access the project list. Ownership is
-     * enforced by the controller, which scopes the query to the current
-     * user's projects (e.g. $user->projects()).
+     * Any authenticated user may access the project list. Ownership and
+     * membership are enforced by the controller, which scopes the query to
+     * the current user's projects (e.g. $user->projects()).
      */
     public function viewAny(User $user): bool
     {
@@ -22,11 +22,12 @@ class ProjectPolicy
     /**
      * Determine whether the user can view the model.
      *
-     * The project owner and every project member may view the project.
+     * The project owner, every explicit project member, and — for
+     * organization-owned projects — every organization member may view it.
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id || $project->hasMember($user);
+        return $project->hasAccess($user);
     }
 
     /**
@@ -48,7 +49,8 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id || $project->isMemberAdmin($user);
+        return $project->effectiveRole($user) === 'admin'
+            || $project->effectiveRole($user) === 'owner';
     }
 
     /**
@@ -56,7 +58,7 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id;
+        return $project->effectiveRole($user) === 'owner';
     }
 
     /**
@@ -65,7 +67,7 @@ class ProjectPolicy
      */
     public function viewMembers(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id || $project->hasMember($user);
+        return $project->hasAccess($user);
     }
 
     /**
@@ -74,7 +76,8 @@ class ProjectPolicy
      */
     public function manageMembers(User $user, Project $project): bool
     {
-        return $user->id === $project->user_id || $project->isMemberAdmin($user);
+        return $project->effectiveRole($user) === 'owner'
+            || $project->effectiveRole($user) === 'admin';
     }
 
     /**
@@ -86,8 +89,8 @@ class ProjectPolicy
     public function archive(User $user, Project $project): bool
     {
         return $user->isManager()
-            || $user->id === $project->user_id
-            || $project->isMemberAdmin($user);
+            || $project->effectiveRole($user) === 'owner'
+            || $project->effectiveRole($user) === 'admin';
     }
 
     /**

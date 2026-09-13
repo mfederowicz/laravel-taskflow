@@ -2,7 +2,9 @@
 
 namespace App\Policies;
 
+use App\Enums\OrganizationRole;
 use App\Enums\ProjectMemberRole;
+use App\Models\OrganizationMember;
 use App\Models\ProjectMember;
 use App\Models\User;
 
@@ -20,7 +22,8 @@ class UserPolicy
 
     /**
      * Determine whether the user can search users (to invite them to a
-     * project). Managers, project owners, and project admins may search.
+     * project or organization). Managers, project owners, project admins, and
+     * organization owners or admins may search.
      */
     public function search(User $user): bool
     {
@@ -28,14 +31,21 @@ class UserPolicy
             return true;
         }
 
-        if ($user->projects()->exists()) {
+        if ($user->projects()->exists() || $user->organizations()->exists()) {
             return true;
         }
 
-        return ProjectMember::query()
+        $isProjectAdmin = ProjectMember::query()
             ->where('user_id', $user->id)
             ->where('role', ProjectMemberRole::Admin)
             ->exists();
+
+        $isOrganizationAdmin = OrganizationMember::query()
+            ->where('user_id', $user->id)
+            ->where('role', OrganizationRole::Admin)
+            ->exists();
+
+        return $isProjectAdmin || $isOrganizationAdmin;
     }
 
     /**

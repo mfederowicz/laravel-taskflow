@@ -2,7 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\OrganizationRole;
 use App\Enums\UserRole;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -44,7 +46,7 @@ class DatabaseSeeder extends Seeder
             'body' => 'Welcome to the demo project!',
         ]);
 
-        User::updateOrCreate(
+        $manager = User::updateOrCreate(
             ['email' => 'manager@example.com'],
             [
                 'name' => 'Manager User',
@@ -52,5 +54,21 @@ class DatabaseSeeder extends Seeder
                 'role' => UserRole::Manager,
             ]
         );
+
+        $organization = Organization::updateOrCreate(
+            ['owner_id' => $user->id, 'name' => 'Demo Org'],
+            ['description' => 'Example organization for TaskFlow.']
+        );
+
+        $organization->members()->updateOrCreate(
+            ['user_id' => $manager->id],
+            ['role' => OrganizationRole::Admin]
+        );
+
+        $organization->projects()->create([
+            'user_id' => $user->id,
+            'name' => 'Demo Org Project',
+            'description' => 'Example project inside Demo Org.',
+        ]);
     }
 }
