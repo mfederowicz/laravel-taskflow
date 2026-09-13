@@ -12,8 +12,8 @@ class ProjectMemberPolicy
      */
     public function update(User $user, ProjectMember $member): bool
     {
-        return $user->id === $member->project->user_id
-            || $member->project->isMemberAdmin($user);
+        return $member->project->effectiveRole($user) === 'owner'
+            || $member->project->effectiveRole($user) === 'admin';
     }
 
     /**
@@ -21,7 +21,7 @@ class ProjectMemberPolicy
      */
     public function delete(User $user, ProjectMember $member): bool
     {
-        return $user->id === $member->project->user_id
-            || $member->project->isMemberAdmin($user);
+        return $member->project->effectiveRole($user) === 'owner'
+            || $member->project->effectiveRole($user) === 'admin';
     }
 }

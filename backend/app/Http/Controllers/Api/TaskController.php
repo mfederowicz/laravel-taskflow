@@ -352,6 +352,9 @@ class TaskController extends Controller
                     $subQuery->where('user_id', $user->id)
                         ->orWhereHas('project.members', function ($members) use ($user) {
                             $members->where('user_id', $user->id);
+                        })
+                        ->orWhereHas('project.organization.members', function ($members) use ($user) {
+                            $members->where('user_id', $user->id);
                         });
                 })
             )
@@ -403,8 +406,9 @@ class TaskController extends Controller
     }
 
     /**
-     * Projects the user may create tasks in: their own projects plus any
-     * project where they hold at least the editor member role.
+     * Projects the user may create tasks in: their own projects, any project
+     * where they hold at least the editor member role, and any project in an
+     * organization where they hold at least the editor role.
      */
     private function eligibleProjects(User $user)
     {
@@ -412,6 +416,10 @@ class TaskController extends Controller
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
+                        $members->where('user_id', $user->id)
+                            ->whereIn('role', ['admin', 'editor']);
+                    })
+                    ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id)
                             ->whereIn('role', ['admin', 'editor']);
                     });

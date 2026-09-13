@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\ProjectMemberRole;
 use App\Models\Task;
 use App\Models\User;
 
@@ -17,7 +16,7 @@ class TaskPolicy
     {
         return $user->id === $task->user_id
             || $user->isManager()
-            || $this->isProjectMember($user, $task);
+            || $this->projectRole($user, $task) !== null;
     }
 
     /**
@@ -58,27 +57,27 @@ class TaskPolicy
             || $this->isProjectAdmin($user, $task);
     }
 
-    private function isProjectMember(User $user, Task $task): bool
-    {
-        return $task->project?->hasMember($user) ?? false;
-    }
-
     private function isProjectAdmin(User $user, Task $task): bool
     {
-        return $this->projectRole($user, $task) === ProjectMemberRole::Admin;
+        return $this->projectRole($user, $task) === 'admin';
     }
 
     private function isAdminOrEditor(User $user, Task $task): bool
     {
         return in_array(
             $this->projectRole($user, $task),
-            [ProjectMemberRole::Admin, ProjectMemberRole::Editor],
+            ['admin', 'editor'],
             true
         );
     }
 
-    private function projectRole(User $user, Task $task): ?ProjectMemberRole
+    /**
+     * The user's effective role in the task's project (owner, explicit
+     * member, or organization member), or null when the task is not attached
+     * to a project or the user has no access to it.
+     */
+    private function projectRole(User $user, Task $task): ?string
     {
-        return $task->project?->getMemberRole($user);
+        return $task->project?->effectiveRole($user);
     }
 }

@@ -21,14 +21,25 @@ class StoreTaskRequest extends FormRequest
 
         return [
             'project_id' => ['required', 'integer', Rule::exists('projects', 'id')->where(function (Builder $query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->orWhereIn('id', function (Builder $sub) use ($userId) {
-                        $sub->select('project_id')
-                            ->from('project_members')
-                            ->where('user_id', $userId)
-                            ->whereIn('role', ['admin', 'editor']);
-                    })
-                    ->whereNull('archived_at');
+                $query->where(function (Builder $subQuery) use ($userId) {
+                    $subQuery->where('user_id', $userId)
+                        ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                            $sub->select('project_id')
+                                ->from('project_members')
+                                ->where('user_id', $userId)
+                                ->whereIn('role', ['admin', 'editor']);
+                        })
+                        ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                            $sub->select('id')
+                                ->from('projects')
+                                ->whereIn('organization_id', function (Builder $orgSub) use ($userId) {
+                                    $orgSub->select('organization_id')
+                                        ->from('organization_members')
+                                        ->where('user_id', $userId)
+                                        ->whereIn('role', ['admin', 'editor']);
+                                });
+                        });
+                })->whereNull('archived_at');
             })],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
@@ -45,6 +56,11 @@ class StoreTaskRequest extends FormRequest
                             $sub->select('user_id')->from('projects')->where('id', $projectId);
                         })->orWhereIn('id', function (Builder $sub) use ($projectId) {
                             $sub->select('user_id')->from('project_members')->where('project_id', $projectId);
+                        })->orWhereIn('id', function (Builder $sub) use ($projectId) {
+                            $sub->select('user_id')->from('organization_members')
+                                ->whereIn('organization_id', function (Builder $orgSub) use ($projectId) {
+                                    $orgSub->select('organization_id')->from('projects')->where('id', $projectId);
+                                });
                         });
                     });
             })],

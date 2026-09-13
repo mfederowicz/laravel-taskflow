@@ -17,14 +17,14 @@ Infrastructure lives at the repo root:
 .
 ├── backend/                          # Laravel API-only application
 │   ├── app/
-│   │   ├── Http/Controllers/Api/     # AuthController, TaskController, ProjectController, CommentController, UserController
+│   │   ├── Http/Controllers/Api/     # AuthController, TaskController, ProjectController, OrganizationController, CommentController, UserController
 │   │   ├── Http/Middleware/MultiAuth.php  # multi-auth guard (sanctum / jwt / passport)
 │   │   ├── Http/Middleware/EnsureUserIsActive.php  # rejects locked accounts (403) on protected routes
 │   │   ├── Http/Requests/            # Form Request validation
 │   │   ├── Http/Resources/           # JSON resources
-│   │   ├── Enums/                    # UserRole, UserStatus (backed string enums)
-│   │   ├── Models/                   # User, Task, Project, Comment
-│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy, UserPolicy
+│   │   ├── Enums/                    # UserRole, UserStatus, OrganizationRole, ProjectMemberRole (backed string enums)
+│   │   ├── Models/                   # User, Task, Project, Comment, Organization, OrganizationMember, ProjectMember
+│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy, UserPolicy, OrganizationPolicy, OrganizationMemberPolicy
 │   ├── config/                       # incl. jwt.php, passport.php, sanctum.php
 │   ├── database/migrations/          # SQLite schema
 │   ├── routes/api.php                # all API routes
@@ -79,7 +79,7 @@ Run artisan commands (executes inside the backend container):
 - Controllers are thin; keep business logic in models/policies, use Form Requests for validation, and Resources for JSON responses.
 - Auth failures return `401 { "success": false, "message": "Unauthenticated." }`; validation failures return `422` with field errors.
 - Token policy (uniform): access tokens live 60 minutes; refresh window is 7 days — JWT/Sanctum rotate via `POST /api/v1/jwt/refresh` / `POST /api/v1/sanctum/refresh` (public, throttled), Passport via the OAuth2 refresh grant. Lifetimes are env-driven (`SANCTUM_EXPIRATION`, `JWT_TTL`, `JWT_REFRESH_TTL`, `PASSPORT_TOKEN_EXPIRATION_MINUTES`, etc.).
-- API resources: Tasks, Projects, and Comments (nested under tasks).
+- API resources: Projects, Tasks, Comments (nested under tasks), and Organizations (with nested members). Organization membership auto-grants access to the org's projects via `Project::effectiveRole()` (owner → explicit project-member role → org role → none); groups must never bypass `effectiveRole`.
 - Database is SQLite (`database/database.sqlite`); schema lives in `database/migrations`.
 - Validation messages are localized — Polish strings in `lang/pl/validation.php`.
 

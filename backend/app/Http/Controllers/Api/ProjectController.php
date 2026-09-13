@@ -30,10 +30,13 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members'])
+            ->with(['user', 'members', 'organization'])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
+                        $members->where('user_id', $user->id);
+                    })
+                    ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id);
                     });
             })
@@ -59,10 +62,13 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members'])
+            ->with(['user', 'members', 'organization'])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
+                        $members->where('user_id', $user->id);
+                    })
+                    ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id);
                     });
             })
@@ -83,9 +89,7 @@ class ProjectController extends Controller
         }
 
         $rows = $projects->map(function (Project $project) use ($user) {
-            $role = $project->user_id === $user->id
-                ? 'owner'
-                : ($project->members->firstWhere('user_id', $user->id)?->role?->value ?? 'viewer');
+            $role = $project->effectiveRole($user);
 
             return [
                 $project->id,
@@ -124,7 +128,7 @@ class ProjectController extends Controller
         );
 
         return response()->json([
-            'data' => new ProjectResource($project->load(['user', 'members'])),
+            'data' => new ProjectResource($project->load(['user', 'members', 'organization'])),
         ], 201);
     }
 
@@ -135,7 +139,7 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        return new ProjectResource($project->load(['user', 'members']));
+        return new ProjectResource($project->load(['user', 'members', 'organization']));
     }
 
     /**
@@ -163,7 +167,7 @@ class ProjectController extends Controller
             );
         }
 
-        return new ProjectResource($project->load(['user', 'members']));
+        return new ProjectResource($project->load(['user', 'members', 'organization']));
     }
 
     /**
@@ -197,7 +201,7 @@ class ProjectController extends Controller
             ['name' => $project->name]
         );
 
-        return new ProjectResource($project->load(['user', 'members']));
+        return new ProjectResource($project->load(['user', 'members', 'organization']));
     }
 
     /**
@@ -216,6 +220,6 @@ class ProjectController extends Controller
             ['name' => $project->name]
         );
 
-        return new ProjectResource($project->load(['user', 'members']));
+        return new ProjectResource($project->load(['user', 'members', 'organization']));
     }
 }

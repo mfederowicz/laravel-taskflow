@@ -2,7 +2,6 @@
 
 namespace App\Policies;
 
-use App\Enums\ProjectMemberRole;
 use App\Models\Comment;
 use App\Models\User;
 
@@ -18,7 +17,7 @@ class CommentPolicy
     {
         return $user->id === $comment->user_id
             || $user->id === $comment->task->user_id
-            || (bool) ($comment->task->project?->hasMember($user) ?? false);
+            || ($comment->task->project?->hasAccess($user) ?? false);
     }
 
     /**
@@ -39,6 +38,6 @@ class CommentPolicy
     {
         return $user->id === $comment->user_id
             || $user->id === $comment->task->user_id
-            || $comment->task->project?->getMemberRole($user) === ProjectMemberRole::Admin;
+            || $comment->task->project?->effectiveRole($user) === 'admin';
     }
 }

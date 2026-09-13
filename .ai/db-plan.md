@@ -10,6 +10,10 @@
 
 ```
 User (1) ──── (N) Project
+User (1) ──── (N) Organization
+Organization (1) ─ (N) OrganizationMember
+Organization (1) ─ (N) Project
+OrganizationMember (N) ─ (1) User
 User (1) ──── (N) Task
 Project (1) ─ (N) Task
 User (1) ──── (N) Comment
@@ -32,13 +36,34 @@ Task (1) ──── (N) Comment
 
 ### `projects`
 
+| Column         | Type      | Notes                                        |
+|----------------|-----------|----------------------------------------------|
+| id             | bigint PK |                                              |
+| user_id        | FK users  | cascade on delete                            |
+| organization_id| FK organizations | nullable, null on delete (org delete keeps the project, detached) |
+| name           | string    | required                                     |
+| description    | text      | nullable                                     |
+| timestamps     |           |                                              |
+
+### `organizations`
+
 | Column      | Type      | Notes                            |
 |-------------|-----------|----------------------------------|
 | id          | bigint PK |                                  |
-| user_id     | FK users  | cascade on delete                |
+| owner_id    | FK users  | cascade on delete                |
 | name        | string    | required                         |
 | description | text      | nullable                         |
 | timestamps  |           |                                  |
+
+### `organization_members`
+
+| Column          | Type      | Notes                            |
+|-----------------|-----------|----------------------------------|
+| id              | bigint PK |                                  |
+| organization_id | FK organizations | cascade on delete         |
+| user_id         | FK users  | cascade on delete                |
+| role            | string    | `admin`/`editor`/`viewer`, default `viewer` |
+| timestamps      |           | unique constraint on (`organization_id`, `user_id`) |
 
 ### `tasks`
 
@@ -76,9 +101,20 @@ Task (1) ──── (N) Comment
 ## Relationships (Eloquent)
 
 - `User hasMany Project`, `User hasMany Task`, `User hasMany Comment`
-- `Project belongsTo User`, `Project hasMany Task`
+- `User hasMany Organization` (as owner), `User hasMany OrganizationMember` (as member)
+- `Organization belongsTo User` (owner), `Organization hasMany OrganizationMember`, `Organization hasMany Project`
+- `OrganizationMember belongsTo Organization`, `OrganizationMember belongsTo User`
+- `Project belongsTo User`, `Project belongsTo Organization` (nullable), `Project hasMany Task`
 - `Task belongsTo User`, `Task belongsTo Project` (nullable), `Task hasMany Comment`
 - `Comment belongsTo Task`, `Comment belongsTo User`
+
+### Access model (org projects)
+
+All project-access decisions go through a single helper `Project::effectiveRole(User)`:
+owner → explicit `project_members` role → organization member role (project is org-owned) → `null`.
+Explicit project-member rows always override the org tier. Org roles map 1:1 onto project access
+(`admin` → can update it and manage its members, `editor` → create/edit tasks + comment, `viewer` → read),
+and that same helper drives the project/task/comment policies, the project + task scopes, and `TaskController::eligibleProjects`.
 
 ## Field value conventions
 
@@ -96,6 +132,10 @@ Task (1) ──── (N) Comment
 6. `2026_09_04_222921_add_project_id_to_tasks_table` — nullable FK on tasks
 7. `2026_09_05_133216_create_comments_table` — comments
 8. `2026_09_06_0x` — Passport OAuth tables
+9. `...` — `project_members`, `tags`, `activities`, notifications, task ownership histories, security-question columns
+10. `2026_09_13_000006_create_organizations_table` — organizations (owner_id, name, description)
+11. `2026_09_13_000007_create_organization_members_table` — org membership (role, unique pair)
+12. `2026_09_13_000008_add_organization_id_to_projects_table` — nullable org FK (null on delete)
 
 ## Seeding
 
@@ -105,6 +145,8 @@ Task (1) ──── (N) Comment
 - `Demo Project`
 - One welcome task (`pending`, `medium`, due in 7 days)
 - One welcome comment
+- Manager user `manager@example.com` / `password123`
+- `Demo Org` (owned by the demo user, manager added as admin) with `Demo Org Project`
 
 ## Development notes
 
