@@ -273,4 +273,36 @@ class OrganizationProjectTest extends TestCase
             ->assertOk()
             ->assertJsonCount(0, 'data');
     }
+
+    public function test_organization_id_filter_returns_only_the_matching_orgs_projects(): void
+    {
+        [$owner, $orgA, $projectA] = $this->orgWithProject();
+        $orgB = Organization::factory()->for($owner, 'owner')->create();
+        $projectB = $orgB->projects()->create([
+            'user_id' => $owner->id,
+            'name' => 'Org B Project',
+        ]);
+        $member = User::factory()->create();
+        $orgA->members()->create(['user_id' => $member->id, 'role' => 'admin']);
+        $orgB->members()->create(['user_id' => $member->id, 'role' => 'admin']);
+
+        Sanctum::actingAs($member);
+
+        $this->getJson("/api/v1/projects?organization_id={$orgA->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $projectA->id);
+    }
+
+    public function test_organization_id_filter_excludes_projects_outsider_cannot_access(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $outsider = User::factory()->create();
+
+        Sanctum::actingAs($outsider);
+
+        $this->getJson("/api/v1/projects?organization_id={$organization->id}")
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
 }

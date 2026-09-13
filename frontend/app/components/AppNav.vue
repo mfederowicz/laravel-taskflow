@@ -18,6 +18,10 @@
       Calendar
     </NuxtLink>
 
+    <NuxtLink class="text-sm hover:text-blue-600" to="/organizations">
+      Organizations
+    </NuxtLink>
+
     <NuxtLink v-if="isManager" class="text-sm hover:text-blue-600" to="/users">
       Users
     </NuxtLink>
