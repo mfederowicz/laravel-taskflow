@@ -352,7 +352,8 @@ async function forgotChallenge() {
     )
 
     if (!response.data.question) {
-      forgotError.value = 'No security question is set for this account.'
+      forgotError.value =
+        'You do not have a security question set up yet. Please contact your manager or an administrator to reset your password.'
       return
     }
 
