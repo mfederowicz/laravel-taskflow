@@ -41,6 +41,26 @@
           </div>
 
           <div>
+            <label for="edit-owner" class="mb-1 block text-sm font-semibold text-gray-700">Owner</label>
+            <select
+                id="edit-owner"
+                v-model="editForm.user_id"
+                :disabled="membersLoading"
+                class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option value="" disabled>
+                {{ membersLoading ? 'Loading members...' : 'Select the assignee' }}
+              </option>
+              <option v-for="option in assigneeOptions" :key="option.id" :value="String(option.id)">
+                {{ option.name }}
+              </option>
+            </select>
+            <p v-if="updateValidationErrors.user_id" class="mt-1 text-sm text-red-600">
+              {{ updateValidationErrors.user_id[0] }}
+            </p>
+          </div>
+
+          <div>
             <label for="edit-title" class="mb-1 block text-sm font-semibold text-gray-700">Title</label>
             <input
                 id="edit-title"
@@ -443,7 +463,7 @@ import type {
   TaskOwnershipHistoryEntry,
   TaskResponse,
 } from '~/types/task'
-import type { Project, ProjectsResponse } from '~/types/project'
+import type { Project, ProjectMember, ProjectsResponse } from '~/types/project'
 import type { User, UsersResponse } from '~/types/user'
 import type { Tag, TagsResponse } from '~/types/tag'
 import {
@@ -493,6 +513,7 @@ const tagRemoveError = ref('')
 
 const editForm = reactive({
   project_id: '',
+  user_id: '',
   title: '',
   description: '',
   status: 'pending',
@@ -501,6 +522,40 @@ const editForm = reactive({
   frequency: '',
   tag_ids: [] as number[],
 })
+
+const { listMembers } = useProjectMembers()
+
+const projectMembers = ref<ProjectMember[]>([])
+const membersLoading = ref(false)
+
+const assigneeOptions = computed(() => {
+  const options = new Map<number, string>()
+
+  const project = editableProjectOptions.value.find(
+    (candidate) => String(candidate.id) === editForm.project_id,
+  )
+
+  if (project) {
+    options.set(project.user.id, project.user.name)
+  }
+
+  for (const member of projectMembers.value) {
+    options.set(member.user.id, member.user.name)
+  }
+
+  return Array.from(options, ([id, name]) => ({ id, name }))
+})
+
+watch(
+  () => editForm.project_id,
+  async (value) => {
+    if (value) {
+      await loadAssigneeOptions(Number(value))
+    } else {
+      projectMembers.value = []
+    }
+  },
+)
 
 const transferOpen = ref(false)
 const transferring = ref(false)
@@ -710,6 +765,7 @@ function startEditing() {
   editing.value = true
 
   editForm.project_id = task.value.project ? String(task.value.project.id) : ''
+  editForm.user_id = task.value.user ? String(task.value.user.id) : ''
   editForm.title = task.value.title
   editForm.description = task.value.description ?? ''
   editForm.status = task.value.status
@@ -718,8 +774,24 @@ function startEditing() {
   editForm.frequency = task.value.frequency ?? ''
   editForm.tag_ids = task.value.tags.map((tag) => tag.id)
 
+  if (task.value.project) {
+    void loadAssigneeOptions(task.value.project.id)
+  }
+
   updateError.value = ''
   updateValidationErrors.value = {}
+}
+
+async function loadAssigneeOptions(projectId: number) {
+  membersLoading.value = true
+
+  try {
+    projectMembers.value = await listMembers(projectId)
+  } catch {
+    projectMembers.value = []
+  } finally {
+    membersLoading.value = false
+  }
 }
 
 function cancelEditing() {
@@ -738,20 +810,31 @@ async function updateTask() {
   updateValidationErrors.value = {}
 
   try {
+    const body: Record<string, unknown> = {
+      project_id: Number(editForm.project_id),
+      title: editForm.title,
+      description: editForm.description || null,
+      status: editForm.status,
+      priority: editForm.priority,
+      due_date: editForm.due_date || null,
+      frequency: editForm.frequency || null,
+      tag_ids: editForm.tag_ids,
+    }
+
+    const assigneeId = Number(editForm.user_id)
+
+    if (
+      assigneeId &&
+      assigneeOptions.value.some((option) => option.id === assigneeId)
+    ) {
+      body.user_id = assigneeId
+    }
+
     const response = await apiFetch<TaskResponse>(
       `/api/v1/tasks/${task.value.id}`,
       {
         method: 'PUT',
-        body: {
-          project_id: Number(editForm.project_id),
-          title: editForm.title,
-          description: editForm.description || null,
-          status: editForm.status,
-          priority: editForm.priority,
-          due_date: editForm.due_date || null,
-          frequency: editForm.frequency || null,
-          tag_ids: editForm.tag_ids,
-        },
+        body,
       },
     )
 

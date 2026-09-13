@@ -52,6 +52,30 @@
           {{ projectsError }}
         </p>
       </div>
+
+      <div class="mb-4">
+        <label for="owner" class="mb-1 block text-sm font-semibold text-gray-700">Owner</label>
+
+        <select
+            id="owner"
+            v-model="form.user_id"
+            :disabled="membersLoading"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="" disabled>
+            {{ membersLoading ? 'Loading members...' : 'Select the assignee' }}
+          </option>
+
+          <option v-for="option in assigneeOptions" :key="option.id" :value="String(option.id)">
+            {{ option.name }}
+          </option>
+        </select>
+
+        <p v-if="validationErrors.user_id" class="mt-1 text-sm text-red-600">
+          {{ validationErrors.user_id[0] }}
+        </p>
+      </div>
+
       <div class="mb-4">
         <label for="title" class="mb-1 block text-sm font-semibold text-gray-700">Title</label>
         <input
@@ -433,6 +457,7 @@ import type {
 } from '~/types/task'
 import type {
   Project,
+  ProjectMember,
   ProjectsResponse,
 } from '~/types/project'
 import type {
@@ -464,6 +489,69 @@ const isManager = computed(() => profile.value?.role === 'manager')
 const projects = ref<Project[]>([])
 const projectsLoading = ref(true)
 const projectsError = ref('')
+
+const projectMembers = ref<ProjectMember[]>([])
+const membersLoading = ref(false)
+
+const { listMembers } = useProjectMembers()
+
+const selectedCreateProject = computed(() =>
+    creatableProjects.value.find(
+        (project) => String(project.id) === form.project_id
+    ) ?? null
+)
+
+const assigneeOptions = computed(() => {
+  const options = new Map<number, string>()
+
+  if (selectedCreateProject.value) {
+    options.set(
+        selectedCreateProject.value.user.id,
+        selectedCreateProject.value.user.name,
+    )
+  }
+
+  for (const member of projectMembers.value) {
+    options.set(member.user.id, member.user.name)
+  }
+
+  return Array.from(options, ([id, name]) => ({ id, name }))
+})
+
+watch(
+    () => form.project_id,
+    async (value) => {
+      projectMembers.value = []
+      form.user_id = ''
+
+      if (!value) {
+        return
+      }
+
+      membersLoading.value = true
+
+      try {
+        projectMembers.value = await listMembers(Number(value))
+
+        const defaultId = profile.value?.id
+        const fallback = assigneeOptions.value[0]?.id
+
+        if (defaultId && assigneeOptions.value.some((option) => option.id === defaultId)) {
+          form.user_id = String(defaultId)
+        } else if (fallback) {
+          form.user_id = String(fallback)
+        }
+      } catch {
+        const fallback = assigneeOptions.value[0]?.id
+
+        if (fallback) {
+          form.user_id = String(fallback)
+        }
+      } finally {
+        membersLoading.value = false
+      }
+    }
+)
 
 const creatableProjects = computed(() =>
     projects.value.filter((project) =>
@@ -510,6 +598,7 @@ const lastPage = ref(1)
 
 const form = reactive({
   project_id: '',
+  user_id: '',
   title: '',
   description: '',
   status: 'pending',
@@ -753,6 +842,7 @@ async function createTask() {
       method: 'POST',
       body: {
         project_id: Number(form.project_id),
+        user_id: form.user_id ? Number(form.user_id) : null,
         title: form.title,
         description: form.description || null,
         status: form.status,
@@ -766,6 +856,7 @@ async function createTask() {
     tasks.value.unshift(response.data)
 
     form.project_id = ''
+    form.user_id = ''
     form.title = ''
     form.description = ''
     form.status = 'pending'
@@ -773,6 +864,8 @@ async function createTask() {
     form.due_date = ''
     form.frequency = ''
     form.tag_ids = []
+
+    projectMembers.value = []
 
     createSuccess.value = response.data.title
     showCreateForm.value = false
