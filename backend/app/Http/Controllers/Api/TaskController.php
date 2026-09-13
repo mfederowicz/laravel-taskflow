@@ -105,8 +105,10 @@ class TaskController extends Controller
         $project = $this->eligibleProjects($request->user())
             ->findOrFail($validated['project_id']);
 
+        $assigneeId = $validated['user_id'] ?? $request->user()->id;
+
         $task = $project->tasks()->create([
-            'user_id' => $request->user()->id,
+            'user_id' => $assigneeId,
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'],
@@ -118,7 +120,7 @@ class TaskController extends Controller
         $task->ownershipHistories()->create([
             'performed_by' => $request->user()->id,
             'from_user_id' => null,
-            'to_user_id' => $request->user()->id,
+            'to_user_id' => $assigneeId,
         ]);
 
         $task->tags()->sync($request->validated('tag_ids') ?? []);
@@ -147,6 +149,8 @@ class TaskController extends Controller
         $this->authorize('update', $task);
 
         $previousStatus = $task->status;
+        $previousUserId = $task->user_id;
+        $assigneeId = $request->validated('user_id');
         $task->update($request->validated());
 
         if ($request->has('tag_ids')) {
@@ -162,6 +166,14 @@ class TaskController extends Controller
                 ->delete();
 
             $this->spawnRecurringOccurrence($task, $request->user());
+        }
+
+        if ($assigneeId !== null && (int) $assigneeId !== $previousUserId) {
+            $task->ownershipHistories()->create([
+                'performed_by' => $request->user()->id,
+                'from_user_id' => $previousUserId,
+                'to_user_id' => (int) $assigneeId,
+            ]);
         }
 
         if ($task->project_id !== null) {
