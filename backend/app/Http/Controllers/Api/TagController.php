@@ -39,9 +39,13 @@ class TagController extends Controller
 
     /**
      * Delete a tag and detach it from every task.
+     *
+     * Manager-only: deleting a shared tag removes it from every user's tasks.
      */
     public function destroy(Tag $tag): Response
     {
+        $this->authorize('destroy', $tag);
+
         $tag->delete();
 
         return response()->noContent();
