@@ -92,11 +92,15 @@ class Project extends Model
 
     public function getMemberRole(User $user): ?ProjectMemberRole
     {
-        $member = $this->members()
-            ->where('user_id', $user->id)
-            ->first();
+        if ($this->relationLoaded('members')) {
+            $member = $this->members->firstWhere('user_id', $user->id);
 
-        return $member?->role;
+            return $member?->role;
+        }
+
+        return $this->members()
+            ->where('user_id', $user->id)
+            ->first()?->role;
     }
 
     public function isMemberAdmin(User $user): bool

@@ -38,6 +38,10 @@ class CommentPolicy
     {
         return $user->id === $comment->user_id
             || $user->id === $comment->task->user_id
-            || $comment->task->project?->effectiveRole($user) === 'admin';
+            || in_array(
+                $comment->task->project?->effectiveRole($user),
+                ['owner', 'admin'],
+                true
+            );
     }
 }

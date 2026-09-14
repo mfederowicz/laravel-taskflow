@@ -71,12 +71,12 @@ class TagApiTest extends TestCase
             ->assertJsonValidationErrors('color');
     }
 
-    public function test_user_can_delete_tag(): void
+    public function test_manager_can_delete_tag(): void
     {
-        $user = User::factory()->create();
+        $manager = User::factory()->create(['role' => 'manager']);
         $tag = Tag::factory()->create(['name' => 'temporary']);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($manager);
 
         $this->deleteJson("/api/v1/tags/{$tag->id}")
             ->assertStatus(204);
@@ -84,15 +84,29 @@ class TagApiTest extends TestCase
         $this->assertDatabaseMissing('tags', ['id' => $tag->id]);
     }
 
+    public function test_regular_user_cannot_delete_tag(): void
+    {
+        $user = User::factory()->create();
+        $tag = Tag::factory()->create(['name' => 'protected']);
+
+        Sanctum::actingAs($user);
+
+        $this->deleteJson("/api/v1/tags/{$tag->id}")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('tags', ['id' => $tag->id]);
+    }
+
     public function test_deleting_a_tag_detaches_it_from_tasks(): void
     {
+        $manager = User::factory()->create(['role' => 'manager']);
         $user = User::factory()->create();
         $project = Project::factory()->for($user)->create();
         $tag = Tag::factory()->create();
         $task = Task::factory()->for($user)->for($project)->create();
         $task->tags()->attach($tag);
 
-        Sanctum::actingAs($user);
+        Sanctum::actingAs($manager);
 
         $this->deleteJson("/api/v1/tags/{$tag->id}")
             ->assertStatus(204);

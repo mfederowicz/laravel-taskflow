@@ -147,4 +147,21 @@ class ExportTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors(['format']);
     }
+
+    public function test_csv_export_escapes_formula_like_cells(): void
+    {
+        $user = User::factory()->create();
+        $project = Project::factory()->for($user)->create(['name' => '=SUM(1+1)']);
+        Task::factory()->for($user)->for($project)->create(['title' => '@SUM(1+1)']);
+
+        Sanctum::actingAs($user);
+
+        $this->get('/api/v1/projects/export')
+            ->assertOk()
+            ->assertSee("'=SUM(1+1)", false);
+
+        $this->get('/api/v1/tasks/export')
+            ->assertOk()
+            ->assertSee("'@SUM(1+1)", false);
+    }
 }

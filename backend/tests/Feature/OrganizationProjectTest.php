@@ -212,6 +212,86 @@ class OrganizationProjectTest extends TestCase
             ->assertJsonValidationErrors(['user_id']);
     }
 
+    public function test_org_editor_can_reassign_a_task_to_another_org_editor(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $assignee = User::factory()->create();
+        $editor = User::factory()->create();
+        $this->addMember($organization, $assignee, 'editor');
+        $this->addMember($organization, $editor, 'editor');
+
+        $task = $project->tasks()->create([
+            'user_id' => $owner->id,
+            'title' => 'Org task',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ]);
+
+        Sanctum::actingAs($editor);
+
+        $this->putJson("/api/v1/tasks/{$task->id}", [
+            'user_id' => $assignee->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.user.id', $assignee->id);
+    }
+
+    public function test_org_owner_can_update_a_task_in_an_org_project_they_do_not_own(): void
+    {
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $projectOwner = User::factory()->create();
+        $project = $organization->projects()->create([
+            'user_id' => $projectOwner->id,
+            'name' => 'Org Project',
+        ]);
+        $assignee = User::factory()->create();
+        $this->addMember($organization, $assignee, 'editor');
+
+        $task = $project->tasks()->create([
+            'user_id' => $projectOwner->id,
+            'title' => 'Org task',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ]);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->putJson("/api/v1/tasks/{$task->id}", [
+            'user_id' => $assignee->id,
+            'title' => 'Adjusted by org owner',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.user.id', $assignee->id)
+            ->assertJsonPath('data.title', 'Adjusted by org owner');
+    }
+
+    public function test_org_editor_can_move_a_task_to_another_project_in_their_org(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $sibling = $organization->projects()->create([
+            'user_id' => $owner->id,
+            'name' => 'Sibling Project',
+        ]);
+        $editor = User::factory()->create();
+        $this->addMember($organization, $editor, 'editor');
+
+        $task = $project->tasks()->create([
+            'user_id' => $owner->id,
+            'title' => 'Move me',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ]);
+
+        Sanctum::actingAs($editor);
+
+        $this->putJson("/api/v1/tasks/{$task->id}", [
+            'project_id' => $sibling->id,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.project.id', $sibling->id);
+    }
+
     public function test_org_viewer_cannot_create_a_task_in_an_org_project(): void
     {
         [$owner, $organization, $project] = $this->orgWithProject();

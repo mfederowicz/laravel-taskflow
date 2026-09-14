@@ -47,6 +47,12 @@ class Organization extends Model
 
     public function getMemberRole(User $user): ?OrganizationRole
     {
+        if ($this->relationLoaded('members')) {
+            $member = $this->members->firstWhere('user_id', $user->id);
+
+            return $member?->role;
+        }
+
         $member = $this->members()
             ->where('user_id', $user->id)
             ->first();
