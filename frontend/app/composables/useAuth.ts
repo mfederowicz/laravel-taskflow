@@ -118,14 +118,17 @@ function useAuth() {
             return local
         }
 
-        try {
-            const response = await $fetch<{ data: User }>('/api/v1/user', {
+        const requestProfile = async (token: string) =>
+            $fetch<{ data: User }>('/api/v1/user', {
                 headers: {
                     Accept: 'application/json',
                     'X-Auth-Method': authMethod.value,
-                    Authorization: `Bearer ${currentToken}`,
+                    Authorization: `Bearer ${token}`,
                 },
             })
+
+        try {
+            const response = await requestProfile(currentToken)
 
             setProfile(response.data)
 
@@ -133,13 +136,58 @@ function useAuth() {
         } catch (error: any) {
             const status = error?.response?.status
 
-            // Transient server or network failure — keep the session; fall back
-            // to whatever profile is cached instead of logging the user out.
-            if (!status || status >= 500) {
+            // Transient server, throttle, or network failure — keep the
+            // session; fall back to whatever profile is cached instead of
+            // logging the user out.
+            if (!status || status >= 500 || status === 429) {
                 return getProfile()
             }
 
-            // A genuine auth failure (401/403) — the token is unusable.
+            if (import.meta.client && status === 401) {
+                // The access token expired — rotate it (single-flight so a
+                // concurrent refresh shares the wait) and retry once before
+                // giving up, so a reload never kills a refreshable session.
+                const result = await refreshAccessToken()
+
+                if (result.locked || (!result.ok && !result.retryable)) {
+                    clearAuth()
+
+                    return null
+                }
+
+                if (result.retryable) {
+                    return getProfile()
+                }
+
+                const newToken = getToken()
+
+                if (!newToken) {
+                    clearAuth()
+
+                    return null
+                }
+
+                try {
+                    const response = await requestProfile(newToken)
+
+                    setProfile(response.data)
+
+                    return response.data
+                } catch (retryError: any) {
+                    const retryStatus = retryError?.response?.status
+
+                    if (!retryStatus || retryStatus >= 500 || retryStatus === 429) {
+                        return getProfile()
+                    }
+
+                    clearAuth()
+
+                    return null
+                }
+            }
+
+            // A genuine auth failure (403 locked, or any other 4xx) — the
+            // token is unusable.
             clearAuth()
 
             return null
