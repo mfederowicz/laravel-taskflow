@@ -31,7 +31,7 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members', 'organization'])
+            ->with(['user', 'members', 'organization', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
@@ -52,7 +52,7 @@ class ProjectController extends Controller
                 fn ($query) => $query->whereNotNull('archived_at'),
                 fn ($query) => $query->whereNull('archived_at')
             )
-            ->latest()
+            ->pinFirst($user->id)
             ->paginate(10);
 
         return ProjectResource::collection($projects);
@@ -69,7 +69,7 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members', 'organization'])
+            ->with(['user', 'members', 'organization', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
@@ -90,7 +90,7 @@ class ProjectController extends Controller
                 fn ($query) => $query->whereNotNull('archived_at'),
                 fn ($query) => $query->whereNull('archived_at')
             )
-            ->latest()
+            ->pinFirst($user->id)
             ->get();
 
         if ($format === 'json') {
@@ -152,7 +152,12 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        return new ProjectResource($project->load(['user', 'members', 'organization']));
+        return new ProjectResource($project->load([
+            'user',
+            'members',
+            'organization',
+            'pins' => fn ($query) => $query->where('user_id', $request->user()->id),
+        ]));
     }
 
     /**
@@ -256,5 +261,44 @@ class ProjectController extends Controller
         );
 
         return new ProjectResource($project->load(['user', 'members', 'organization']));
+    }
+
+    /**
+     * Pin the project for the current user so it floats to the top of their
+     * project list. Pinning is personal and idempotent.
+     */
+    public function pin(Request $request, Project $project): ProjectResource
+    {
+        $this->authorize('pin', $project);
+
+        $request->user()->projectPins()->firstOrCreate([
+            'project_id' => $project->id,
+        ]);
+
+        return new ProjectResource($project->load([
+            'user',
+            'members',
+            'organization',
+            'pins' => fn ($query) => $query->where('user_id', $request->user()->id),
+        ]));
+    }
+
+    /**
+     * Unpin the project for the current user. Idempotent.
+     */
+    public function unpin(Request $request, Project $project): ProjectResource
+    {
+        $this->authorize('pin', $project);
+
+        $request->user()->projectPins()
+            ->where('project_id', $project->id)
+            ->delete();
+
+        return new ProjectResource($project->load([
+            'user',
+            'members',
+            'organization',
+            'pins' => fn ($query) => $query->where('user_id', $request->user()->id),
+        ]));
     }
 }

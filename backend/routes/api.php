@@ -98,6 +98,8 @@ Route::prefix('v1')->group(function () {
         Route::patch('/projects/{project}/organization', [ProjectController::class, 'updateOrganization']);
         Route::post('/projects/{project}/archive', [ProjectController::class, 'archive']);
         Route::post('/projects/{project}/restore', [ProjectController::class, 'restore']);
+        Route::post('/projects/{project}/pin', [ProjectController::class, 'pin']);
+        Route::delete('/projects/{project}/pin', [ProjectController::class, 'unpin']);
 
         // Project members
         Route::get('/projects/{project}/members', [ProjectMemberController::class, 'index']);

@@ -27,6 +27,13 @@
             Archived
           </span>
 
+          <span
+              v-if="project.pinned"
+              class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700"
+          >
+            Pinned
+          </span>
+
           <NuxtLink
               v-if="project.organization"
               :to="`/organizations/${project.organization.id}`"
@@ -52,6 +59,15 @@
               @click="toggleArchive"
           >
             {{ togglingArchive ? 'Saving...' : project.archived ? 'Restore project' : 'Archive project' }}
+          </button>
+
+          <button
+              type="button"
+              :disabled="togglingPin"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              @click="togglePin"
+          >
+            {{ togglingPin ? 'Saving...' : project.pinned ? 'Unpin project' : 'Pin project' }}
           </button>
         </div>
 
@@ -441,6 +457,7 @@ const canArchiveProject = computed(() =>
 )
 
 const togglingArchive = ref(false)
+const togglingPin = ref(false)
 
 const myOrganizations = ref<Organization[]>([])
 const editingOrganization = ref(false)
@@ -567,6 +584,30 @@ async function toggleArchive() {
     error.value = err?.data?.message ?? 'Failed to update project archive state.'
   } finally {
     togglingArchive.value = false
+  }
+}
+
+async function togglePin() {
+  if (!project.value) {
+    return
+  }
+
+  togglingPin.value = true
+  error.value = ''
+
+  try {
+    const response = await apiFetch<{ data: Project }>(
+        `/api/v1/projects/${project.value.id}/pin`,
+        {
+          method: project.value.pinned ? 'DELETE' : 'POST',
+        }
+    )
+
+    project.value = response.data
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to update project pin.'
+  } finally {
+    togglingPin.value = false
   }
 }
 

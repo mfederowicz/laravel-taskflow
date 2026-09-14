@@ -86,6 +86,17 @@ class ProjectPolicy
     }
 
     /**
+     * Determine whether the user can pin/unpin the project.
+     *
+     * Pinning is a personal bookmark, so anyone who can see the project may
+     * toggle their own pin.
+     */
+    public function pin(User $user, Project $project): bool
+    {
+        return $project->hasAccess($user);
+    }
+
+    /**
      * Determine whether the user can view the project member list.
      * The project owner and any project member may view the roster.
      */
