@@ -69,7 +69,8 @@ class StoreTaskRequest extends FormRequest
                             $sub->select('user_id')->from('organization_members')
                                 ->whereIn('organization_id', function (Builder $orgSub) use ($projectId) {
                                     $orgSub->select('organization_id')->from('projects')->where('id', $projectId);
-                                });
+                                })
+                                ->whereIn('role', ['admin', 'editor']);
                         })->orWhereIn('id', function (Builder $sub) use ($projectId) {
                             $sub->select('owner_id')->from('organizations')
                                 ->whereIn('id', function (Builder $orgSub) use ($projectId) {

@@ -64,12 +64,19 @@ function useOrganizations() {
         })
     }
 
-    async function listMembers(organizationId: number): Promise<OrganizationMember[]> {
+    async function listMembers(
+        organizationId: number,
+        page = 1,
+    ): Promise<{ members: OrganizationMember[]; currentPage: number; lastPage: number }> {
         const response = await apiFetch<OrgMembersResponse>(
-            `/api/v1/organizations/${organizationId}/members`,
+            `/api/v1/organizations/${organizationId}/members?page=${page}`,
         )
 
-        return response.data
+        return {
+            members: response.data,
+            currentPage: response.meta?.current_page ?? 1,
+            lastPage: response.meta?.last_page ?? 1,
+        }
     }
 
     async function addMember(
