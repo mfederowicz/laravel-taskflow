@@ -79,6 +79,22 @@ function useOrganizations() {
         }
     }
 
+    async function listAllMembers(organizationId: number): Promise<OrganizationMember[]> {
+        const members: OrganizationMember[] = []
+        let page = 1
+        let lastPage = 1
+
+        do {
+            const result = await listMembers(organizationId, page)
+
+            members.push(...result.members)
+            lastPage = result.lastPage
+            page++
+        } while (page <= lastPage)
+
+        return members
+    }
+
     async function addMember(
         organizationId: number,
         userId: number,
@@ -148,6 +164,7 @@ function useOrganizations() {
         updateOrganization,
         deleteOrganization,
         listMembers,
+        listAllMembers,
         addMember,
         updateMemberRole,
         removeMember,

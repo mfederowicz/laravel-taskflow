@@ -491,9 +491,11 @@ const projectsLoading = ref(true)
 const projectsError = ref('')
 
 const projectMembers = ref<ProjectMember[]>([])
+const orgAssignees = ref<{ id: number; name: string }[]>([])
 const membersLoading = ref(false)
 
 const { listMembers } = useProjectMembers()
+const { getOrganization, listAllMembers } = useOrganizations()
 
 const form = reactive({
   project_id: '',
@@ -527,6 +529,10 @@ const assigneeOptions = computed(() => {
     options.set(member.user.id, member.user.name)
   }
 
+  for (const assignee of orgAssignees.value) {
+    options.set(assignee.id, assignee.name)
+  }
+
   return Array.from(options, ([id, name]) => ({ id, name }))
 })
 
@@ -534,6 +540,7 @@ watch(
     () => form.project_id,
     async (value) => {
       projectMembers.value = []
+      orgAssignees.value = []
       form.user_id = ''
 
       if (!value) {
@@ -544,6 +551,29 @@ watch(
 
       try {
         projectMembers.value = await listMembers(Number(value))
+
+        const project = selectedCreateProject.value
+
+        if (project?.organization?.id) {
+          try {
+            const [organization, members] = await Promise.all([
+              getOrganization(project.organization.id),
+              listAllMembers(project.organization.id),
+            ])
+
+            orgAssignees.value = [
+              { id: organization.owner.id, name: organization.owner.name },
+              ...members
+                  .filter(
+                      (member) =>
+                          member.role === 'admin' || member.role === 'editor'
+                  )
+                  .map((member) => ({ id: member.user.id, name: member.user.name })),
+            ]
+          } catch {
+            orgAssignees.value = []
+          }
+        }
 
         const defaultId = profile.value?.id
         const fallback = assigneeOptions.value[0]?.id
