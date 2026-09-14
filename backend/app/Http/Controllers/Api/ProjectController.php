@@ -31,7 +31,7 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members', 'organization', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
+            ->with(['user', 'members', 'organization.members', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
@@ -69,7 +69,7 @@ class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->with(['user', 'members', 'organization', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
+            ->with(['user', 'members', 'organization.members', 'pins' => fn ($q) => $q->where('user_id', $user->id)])
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->orWhereHas('members', function ($members) use ($user) {
