@@ -95,6 +95,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/projects/{project}', [ProjectController::class, 'show']);
         Route::put('/projects/{project}', [ProjectController::class, 'update']);
         Route::delete('/projects/{project}', [ProjectController::class, 'destroy']);
+        Route::patch('/projects/{project}/organization', [ProjectController::class, 'updateOrganization']);
         Route::post('/projects/{project}/archive', [ProjectController::class, 'archive']);
         Route::post('/projects/{project}/restore', [ProjectController::class, 'restore']);
 

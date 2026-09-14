@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ProjectMemberRole;
 use App\Models\Organization;
+use App\Models\Project;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -304,5 +305,241 @@ class OrganizationProjectTest extends TestCase
         $this->getJson("/api/v1/projects?organization_id={$organization->id}")
             ->assertOk()
             ->assertJsonCount(0, 'data');
+    }
+
+    public function test_owner_can_assign_their_personal_project_to_an_org(): void
+    {
+        $owner = User::factory()->create();
+        $organization = Organization::factory()->for($owner, 'owner')->create();
+        $project = Project::factory()->for($owner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($owner);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertOk()
+            ->assertJsonPath('data.organization.id', $organization->id);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'organization_id' => $organization->id,
+        ]);
+    }
+
+    public function test_owner_can_detach_a_project_from_an_org(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+
+        Sanctum::actingAs($owner);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.organization', null);
+
+        $this->assertDatabaseHas('projects', [
+            'id' => $project->id,
+            'organization_id' => null,
+        ]);
+    }
+
+    public function test_org_admin_can_assign_a_personal_project_into_their_org(): void
+    {
+        $projectOwner = User::factory()->create();
+        $orgAdmin = User::factory()->create();
+        $organization = Organization::factory()->for($orgAdmin, 'owner')->create();
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($orgAdmin);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertOk()
+            ->assertJsonPath('data.organization.id', $organization->id);
+    }
+
+    public function test_assigned_project_becomes_visible_to_org_members(): void
+    {
+        $projectOwner = User::factory()->create();
+        $orgAdmin = User::factory()->create();
+        $viewer = User::factory()->create();
+        $organization = Organization::factory()->for($orgAdmin, 'owner')->create();
+        $organization->members()->create(['user_id' => $viewer->id, 'role' => 'viewer']);
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($orgAdmin);
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertOk();
+
+        Sanctum::actingAs($viewer);
+        $this->getJson("/api/v1/projects/{$project->id}")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'viewer');
+    }
+
+    public function test_org_viewer_cannot_assign_a_project_into_the_org(): void
+    {
+        $projectOwner = User::factory()->create();
+        $viewer = User::factory()->create();
+        $organization = Organization::factory()->for($projectOwner, 'owner')->create();
+        $organization->members()->create(['user_id' => $viewer->id, 'role' => 'viewer']);
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($viewer);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['organization_id']);
+    }
+
+    public function test_outsider_cannot_assign_a_project_into_someone_elses_org(): void
+    {
+        $projectOwner = User::factory()->create();
+        $outsider = User::factory()->create();
+        $organization = Organization::factory()->for($projectOwner, 'owner')->create();
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($outsider);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['organization_id']);
+    }
+
+    public function test_non_owner_cannot_detach_a_project_from_an_org(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $editor = User::factory()->create();
+        $this->addMember($organization, $editor, 'editor');
+
+        Sanctum::actingAs($editor);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => null,
+        ])->assertForbidden();
+    }
+
+    public function test_owner_cannot_assign_a_project_to_an_org_they_do_not_manage(): void
+    {
+        $projectOwner = User::factory()->create();
+        $otherOwner = User::factory()->create();
+        $organization = Organization::factory()->for($otherOwner, 'owner')->create();
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($projectOwner);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['organization_id']);
+    }
+
+    public function test_org_owner_can_assign_a_personal_project_into_their_own_org(): void
+    {
+        $projectOwner = User::factory()->create();
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $project = Project::factory()->for($projectOwner)->create(['name' => 'Personal']);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->patchJson("/api/v1/projects/{$project->id}/organization", [
+            'organization_id' => $organization->id,
+        ])->assertOk()
+            ->assertJsonPath('data.organization.id', $organization->id);
+
+        $this->getJson("/api/v1/projects/{$project->id}")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'admin');
+    }
+
+    public function test_org_owner_is_an_admin_of_an_org_project_they_do_not_own(): void
+    {
+        $creator = User::factory()->create();
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $project = $organization->projects()->create([
+            'user_id' => $creator->id,
+            'name' => 'Org Project',
+        ]);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->getJson("/api/v1/projects/{$project->id}")
+            ->assertOk()
+            ->assertJsonPath('data.role', 'admin');
+
+        $this->putJson("/api/v1/projects/{$project->id}", [
+            'description' => 'Org owner edit',
+        ])->assertOk();
+    }
+
+    public function test_org_projects_appear_in_the_org_owners_project_index(): void
+    {
+        $creator = User::factory()->create();
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $project = $organization->projects()->create([
+            'user_id' => $creator->id,
+            'name' => 'Org Project',
+        ]);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->getJson('/api/v1/projects')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $project->id)
+            ->assertJsonPath('data.0.role', 'admin');
+    }
+
+    public function test_org_projects_tasks_appear_in_the_org_owners_task_index(): void
+    {
+        $creator = User::factory()->create();
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $project = $organization->projects()->create([
+            'user_id' => $creator->id,
+            'name' => 'Org Project',
+        ]);
+        $task = $project->tasks()->create([
+            'user_id' => $creator->id,
+            'title' => 'Org task',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ]);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->getJson('/api/v1/tasks')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $task->id);
+    }
+
+    public function test_org_owner_can_create_a_task_in_an_org_project_they_do_not_own(): void
+    {
+        $creator = User::factory()->create();
+        $orgOwner = User::factory()->create();
+        $organization = Organization::factory()->for($orgOwner, 'owner')->create();
+        $project = $organization->projects()->create([
+            'user_id' => $creator->id,
+            'name' => 'Org Project',
+        ]);
+
+        Sanctum::actingAs($orgOwner);
+
+        $this->postJson('/api/v1/tasks', [
+            'project_id' => $project->id,
+            'user_id' => $orgOwner->id,
+            'title' => 'New org task',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.project.id', $project->id);
     }
 }

@@ -355,6 +355,9 @@ class TaskController extends Controller
                         })
                         ->orWhereHas('project.organization.members', function ($members) use ($user) {
                             $members->where('user_id', $user->id);
+                        })
+                        ->orWhereHas('project.organization', function ($organization) use ($user) {
+                            $organization->where('owner_id', $user->id);
                         });
                 })
             )
@@ -422,6 +425,9 @@ class TaskController extends Controller
                     ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id)
                             ->whereIn('role', ['admin', 'editor']);
+                    })
+                    ->orWhereHas('organization', function ($organization) use ($user) {
+                        $organization->where('owner_id', $user->id);
                     });
             })
             ->whereNull('archived_at');

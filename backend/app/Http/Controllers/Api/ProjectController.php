@@ -6,6 +6,7 @@ use App\Enums\ActivityType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ExportRequest;
 use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\UpdateProjectOrganizationRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use App\Http\Resources\ProjectResource;
 use App\Models\Project;
@@ -38,6 +39,9 @@ class ProjectController extends Controller
                     })
                     ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id);
+                    })
+                    ->orWhereHas('organization', function ($organization) use ($user) {
+                        $organization->where('owner_id', $user->id);
                     });
             })
             ->when($request->integer('organization_id'), function ($query, $organizationId) {
@@ -73,6 +77,9 @@ class ProjectController extends Controller
                     })
                     ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id);
+                    })
+                    ->orWhereHas('organization', function ($organization) use ($user) {
+                        $organization->where('owner_id', $user->id);
                     });
             })
             ->when($request->validated('organization_id'), function ($query, $organizationId) {
@@ -188,6 +195,28 @@ class ProjectController extends Controller
         $project->delete();
 
         return response()->noContent();
+    }
+
+    /**
+     * Assign the project to an organization (or detach it by sending
+     * `organization_id = null`). The project owner decides its container;
+     * organization admins may assign projects into an organization they own
+     * or administer.
+     */
+    public function updateOrganization(
+        UpdateProjectOrganizationRequest $request,
+        Project $project
+    ): ProjectResource {
+        $this->authorize(
+            'assignOrganization',
+            [$project, $request->validated('organization_id')]
+        );
+
+        $project->update([
+            'organization_id' => $request->validated('organization_id'),
+        ]);
+
+        return new ProjectResource($project->load(['user', 'members', 'organization']));
     }
 
     /**

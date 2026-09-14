@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Organization;
 use App\Models\Project;
 use App\Models\User;
 
@@ -59,6 +60,29 @@ class ProjectPolicy
     public function delete(User $user, Project $project): bool
     {
         return $project->effectiveRole($user) === 'owner';
+    }
+
+    /**
+     * Determine whether the user can assign the project to an organization.
+     *
+     * The project owner may always assign the project to (or detach it from)
+     * an organization. Additionally, an admin of the target organization may
+     * assign the project into an organization they own or administer. Only
+     * the project owner may detach it (organization_id = null).
+     */
+    public function assignOrganization(User $user, Project $project, ?int $organizationId): bool
+    {
+        if ($user->id === $project->user_id) {
+            return true;
+        }
+
+        if ($organizationId === null) {
+            return false;
+        }
+
+        $organization = Organization::find($organizationId);
+
+        return $organization?->isMemberAdmin($user) ?? false;
     }
 
     /**
