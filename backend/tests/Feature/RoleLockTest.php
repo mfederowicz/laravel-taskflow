@@ -207,7 +207,7 @@ class RoleLockTest extends TestCase
     public function test_locked_user_cannot_refresh_sanctum_token(): void
     {
         $user = User::factory()->locked()->create();
-        $token = $user->createToken('test')->plainTextToken;
+        $token = $user->createToken('session', ['session'], now()->addMinutes(60))->plainTextToken;
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'sanctum')

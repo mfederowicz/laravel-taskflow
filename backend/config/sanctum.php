@@ -52,7 +52,20 @@ return [
     |
     */
 
-    'expiration' => env('SANCTUM_EXPIRATION', 60),
+    'expiration' => null,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Session Token Expiration (minutes)
+    |--------------------------------------------------------------------------
+    |
+    | Used to set an explicit `expires_at` on tokens issued at login/register.
+    | PATs created via /api/v1/user/tokens receive no expiry and are unaffected
+    | by the global `expiration` (which is disabled above).
+    |
+    */
+
+    'session_expiration' => env('SANCTUM_EXPIRATION', 60),
 
     /*
     |--------------------------------------------------------------------------

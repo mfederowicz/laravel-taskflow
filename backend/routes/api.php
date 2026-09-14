@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OAuthClientController;
 use App\Http\Controllers\Api\OrganizationController;
 use App\Http\Controllers\Api\OrganizationMemberController;
+use App\Http\Controllers\Api\PersonalTokenController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectMemberController;
 use App\Http\Controllers\Api\TagController;
@@ -60,6 +61,9 @@ Route::prefix('v1')->group(function () {
         });
         Route::put('/user/password', [AuthController::class, 'updateOwnPassword']);
         Route::put('/user/profile', [AuthController::class, 'updateOwnProfile']);
+        Route::get('/user/tokens', [PersonalTokenController::class, 'index']);
+        Route::post('/user/tokens', [PersonalTokenController::class, 'store']);
+        Route::delete('/user/tokens/{token}', [PersonalTokenController::class, 'destroy']);
 
         // Users (manager only; search for project invitations)
         Route::get('/users', [UserController::class, 'index']);
