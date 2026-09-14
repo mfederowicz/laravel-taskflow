@@ -21,7 +21,7 @@ class TokenExpirationTest extends TestCase
     public function test_sanctum_token_expires_after_configured_ttl(): void
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test')->plainTextToken;
+        $token = $user->createToken('session', ['session'], now()->addMinutes(60))->plainTextToken;
 
         $this->withToken($token)
             ->withHeader('X-Auth-Method', 'sanctum')
@@ -49,7 +49,7 @@ class TokenExpirationTest extends TestCase
     public function test_sanctum_token_can_be_refreshed_within_window(): void
     {
         $user = User::factory()->create();
-        $tokenModel = $user->createToken('test');
+        $tokenModel = $user->createToken('session', ['session'], now()->addMinutes(60));
         $token = $tokenModel->plainTextToken;
 
         $this->travel(61)->minutes();
@@ -78,7 +78,7 @@ class TokenExpirationTest extends TestCase
     public function test_sanctum_refresh_fails_beyond_window(): void
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test')->plainTextToken;
+        $token = $user->createToken('session', ['session'], now()->addMinutes(60))->plainTextToken;
 
         $this->travel(8)->days();
 
@@ -103,7 +103,7 @@ class TokenExpirationTest extends TestCase
     public function test_sanctum_refresh_window_slides_on_rotation(): void
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test')->plainTextToken;
+        $token = $user->createToken('session', ['session'], now()->addMinutes(60))->plainTextToken;
 
         $this->travel(61)->minutes();
 
@@ -256,7 +256,7 @@ class TokenExpirationTest extends TestCase
     public function test_sanctum_refresh_handles_deleted_user(): void
     {
         $user = User::factory()->create();
-        $token = $user->createToken('test')->plainTextToken;
+        $token = $user->createToken('session', ['session'], now()->addMinutes(60))->plainTextToken;
 
         $user->delete();
 

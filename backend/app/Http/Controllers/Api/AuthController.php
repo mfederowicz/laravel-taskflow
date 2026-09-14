@@ -44,7 +44,11 @@ class AuthController extends Controller
             'security_answer' => $validated['security_answer'] ?? null,
         ]);
 
-        $token = $user->createToken('api')->plainTextToken;
+        $token = $user->createToken(
+            'session',
+            ['session'],
+            now()->addMinutes((int) config('sanctum.session_expiration', 60))
+        )->plainTextToken;
 
         return response()->json([
             'data' => [
@@ -77,7 +81,11 @@ class AuthController extends Controller
             ]);
         }
 
-        $token = $user->createToken('api')->plainTextToken;
+        $token = $user->createToken(
+            'session',
+            ['session'],
+            now()->addMinutes((int) config('sanctum.session_expiration', 60))
+        )->plainTextToken;
 
         return response()->json([
             'data' => [
@@ -166,6 +174,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // PATs are long-lived by design and must not be rotated via this endpoint.
+        if (! in_array('session', $accessToken->abilities ?? [])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired token.',
+            ], 401);
+        }
+
         $refreshWindow = (int) config('sanctum.refresh_expiration', 7);
 
         if ($accessToken->created_at->lt(now()->subDays($refreshWindow))) {
@@ -193,7 +209,11 @@ class AuthController extends Controller
 
         $accessToken->delete();
 
-        $token = $user->createToken('api')->plainTextToken;
+        $token = $user->createToken(
+            'session',
+            ['session'],
+            now()->addMinutes((int) config('sanctum.session_expiration', 60))
+        )->plainTextToken;
 
         return response()->json([
             'data' => [
