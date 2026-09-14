@@ -11,6 +11,7 @@ use App\Models\Project;
 use App\Models\ProjectMember;
 use App\Support\Activity;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -48,10 +49,23 @@ class ProjectMemberController extends Controller
 
         $validated = $request->validated();
 
-        $member = $project->members()->create([
-            'user_id' => $validated['user_id'],
-            'role' => $validated['role'],
-        ]);
+        try {
+            $member = $project->members()->create([
+                'user_id' => $validated['user_id'],
+                'role' => $validated['role'],
+            ]);
+        } catch (QueryException $e) {
+            if ($e->getCode() === '23000') {
+                return response()->json([
+                    'message' => 'The user is already a member of this project.',
+                    'errors' => [
+                        'user_id' => ['The user is already a member of this project.'],
+                    ],
+                ], 422);
+            }
+
+            throw $e;
+        }
 
         $member->load('user');
 

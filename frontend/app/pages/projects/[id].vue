@@ -187,6 +187,28 @@
           </li>
         </ul>
 
+        <div v-if="membersLastPage > 1" class="mt-4 flex items-center gap-4">
+          <button
+              type="button"
+              :disabled="membersPage === 1"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              @click="membersPreviousPage"
+          >
+            Previous
+          </button>
+
+          <span class="text-sm text-gray-600">Page {{ membersPage }} of {{ membersLastPage }}</span>
+
+          <button
+              type="button"
+              :disabled="membersPage === membersLastPage"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              @click="membersNextPage"
+          >
+            Next
+          </button>
+        </div>
+
         <form
             v-if="canManageMembers"
             class="mt-6 border-t border-gray-100 pt-5"
@@ -367,7 +389,7 @@ const { apiFetch } = useApi()
 const { ensureProfile } = useAuth()
 const { listOrganizations } = useOrganizations()
 const {
-    listMembers,
+    listMembersPaginated,
     addMember,
     updateMemberRole,
     removeMember: removeMemberApi,
@@ -383,6 +405,8 @@ const error = ref('')
 const members = ref<ProjectMember[]>([])
 const membersLoading = ref(true)
 const membersError = ref('')
+const membersPage = ref(1)
+const membersLastPage = ref(1)
 
 const adding = ref(false)
 const addError = ref('')
@@ -601,17 +625,39 @@ function formatDate(value: string): string {
   return date.toLocaleDateString()
 }
 
-async function loadMembers() {
+async function loadMembers(page = membersPage.value) {
   membersLoading.value = true
   membersError.value = ''
 
   try {
-    members.value = await listMembers(projectId.value)
+    const result = await listMembersPaginated(projectId.value, page)
+
+    members.value = result.members
+    membersPage.value = result.currentPage
+    membersLastPage.value = result.lastPage
   } catch (err: any) {
     membersError.value = err?.data?.message ?? 'Failed to load members.'
   } finally {
     membersLoading.value = false
   }
+}
+
+async function membersPreviousPage() {
+  if (membersPage.value <= 1) {
+    return
+  }
+
+  membersPage.value--
+  await loadMembers()
+}
+
+async function membersNextPage() {
+  if (membersPage.value >= membersLastPage.value) {
+    return
+  }
+
+  membersPage.value++
+  await loadMembers()
 }
 
 function onSearchInput() {
@@ -700,6 +746,11 @@ async function handleRemoveMember(member: ProjectMember) {
     members.value = members.value.filter(
         (item: ProjectMember) => item.id !== member.id
     )
+
+    if (members.value.length === 0 && membersPage.value > 1) {
+      membersPage.value--
+      await loadMembers()
+    }
 
     if (member.user.id === currentUserId.value) {
       try {

@@ -9,6 +9,7 @@ use App\Http\Resources\OrganizationMemberResource;
 use App\Models\Organization;
 use App\Models\OrganizationMember;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -47,10 +48,26 @@ class OrganizationMemberController extends Controller
 
         $validated = $request->validated();
 
-        $member = $organization->members()->create([
-            'user_id' => $validated['user_id'],
-            'role' => $validated['role'],
-        ]);
+        try {
+            $member = $organization->members()->create([
+                'user_id' => $validated['user_id'],
+                'role' => $validated['role'],
+            ]);
+        } catch (QueryException $e) {
+            // The (organization_id, user_id) unique index guards against a
+            // duplicate add slipping between validation and insert (two tabs /
+            // concurrent admins). Surfaced as a validation error, not a 500.
+            if ($e->getCode() === '23000') {
+                return response()->json([
+                    'message' => 'The user is already a member of this organization.',
+                    'errors' => [
+                        'user_id' => ['The user is already a member of this organization.'],
+                    ],
+                ], 422);
+            }
+
+            throw $e;
+        }
 
         $member->load('user');
 
