@@ -17,7 +17,7 @@ class Export
         fputcsv($stream, $headers);
 
         foreach ($rows as $row) {
-            fputcsv($stream, $row);
+            fputcsv($stream, array_map([self::class, 'sanitizeCell'], $row));
         }
 
         rewind($stream);
@@ -25,5 +25,19 @@ class Export
         fclose($stream);
 
         return $content;
+    }
+
+    /**
+     * Guard against CSV formula injection (OWASP): a cell starting with `=`,
+     * `+`, `-`, or `@` is interpreted as a formula when the file is opened in
+     * Excel or Google Sheets. Prefixing the single quote renders it as text.
+     */
+    private static function sanitizeCell(mixed $value): mixed
+    {
+        if (is_string($value) && $value !== '' && str_contains('=+-@', $value[0])) {
+            return "'".$value;
+        }
+
+        return $value;
     }
 }
