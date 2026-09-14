@@ -27,6 +27,14 @@
             Archived
           </span>
 
+          <NuxtLink
+              v-if="project.organization"
+              :to="`/organizations/${project.organization.id}`"
+              class="rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-purple-700 hover:bg-purple-200"
+          >
+            {{ project.organization.name }}
+          </NuxtLink>
+
           <button
               v-if="canArchiveProject"
               type="button"

@@ -15,6 +15,7 @@ class ExportRequest extends FormRequest
     {
         return [
             'format' => ['sometimes', 'in:csv,json'],
+            'organization_id' => ['sometimes', 'integer'],
         ];
     }
 }

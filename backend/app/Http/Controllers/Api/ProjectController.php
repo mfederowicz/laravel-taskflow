@@ -40,6 +40,9 @@ class ProjectController extends Controller
                         $members->where('user_id', $user->id);
                     });
             })
+            ->when($request->integer('organization_id'), function ($query, $organizationId) {
+                $query->where('organization_id', $organizationId);
+            })
             ->when(
                 $request->boolean('archived'),
                 fn ($query) => $query->whereNotNull('archived_at'),
@@ -71,6 +74,9 @@ class ProjectController extends Controller
                     ->orWhereHas('organization.members', function ($members) use ($user) {
                         $members->where('user_id', $user->id);
                     });
+            })
+            ->when($request->validated('organization_id'), function ($query, $organizationId) {
+                $query->where('organization_id', $organizationId);
             })
             ->when(
                 $request->boolean('archived'),

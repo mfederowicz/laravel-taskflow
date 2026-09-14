@@ -8,6 +8,10 @@ export interface Project {
         id: number
         name: string
     }
+    organization: {
+        id: number
+        name: string
+    } | null
     role: ProjectRole
     archived: boolean
     created_at: string

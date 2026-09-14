@@ -32,6 +32,24 @@
         </p>
       </div>
 
+      <div class="mb-4">
+        <label for="organization" class="mb-1 block text-sm font-semibold text-gray-700">Organization</label>
+        <select
+            id="organization"
+            v-model="form.organization_id"
+            class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="">No organization (personal project)</option>
+          <option v-for="org in myOrganizations" :key="org.id" :value="String(org.id)">
+            {{ org.name }}
+          </option>
+        </select>
+
+        <p v-if="validationErrors.organization_id" class="mt-1 text-sm text-red-600">
+          {{ validationErrors.organization_id[0] }}
+        </p>
+      </div>
+
       <button type="submit" :disabled="creating" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
         {{ creating ? 'Creating...' : 'Create project' }}
       </button>
@@ -151,6 +169,14 @@
               {{ roleLabel(project.role) }}
             </span>
 
+            <NuxtLink
+                v-if="project.organization"
+                :to="`/organizations/${project.organization.id}`"
+                class="ml-2 inline-block rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 hover:bg-purple-200"
+            >
+              {{ project.organization.name }}
+            </NuxtLink>
+
             <span
                 v-if="project.archived"
                 class="ml-2 rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700"
@@ -243,10 +269,13 @@ import type {
   ProjectResponse,
   ProjectsResponse,
 } from '~/types/project'
+import type { Organization } from '~/types/organization'
 
 const { apiFetch, apiDownload } = useApi()
+const { listOrganizations } = useOrganizations()
 
 const projects = ref<Project[]>([])
+const myOrganizations = ref<Organization[]>([])
 const pending = ref(true)
 const error = ref('')
 
@@ -260,6 +289,7 @@ const validationErrors = ref<Record<string, string[]>>({})
 const form = reactive({
   name: '',
   description: '',
+  organization_id: '',
 })
 
 const editingProjectId = ref<number | null>(null)
@@ -280,8 +310,31 @@ const showArchived = ref(false)
 const togglingArchive = ref<number | null>(null)
 
 onMounted(async () => {
-  await loadProjects()
+  await Promise.all([loadProjects(), loadMyOrganizations()])
 })
+
+async function loadMyOrganizations() {
+  const organizations: Organization[] = []
+
+  try {
+    let page = 1
+    let lastPage = 1
+
+    do {
+      const result = await listOrganizations(page)
+
+      organizations.push(...result.organizations)
+      lastPage = result.lastPage
+      page++
+    } while (page <= lastPage)
+
+    myOrganizations.value = organizations.filter(
+        (org) => org.role === 'owner' || org.role === 'admin'
+    )
+  } catch {
+    myOrganizations.value = []
+  }
+}
 
 async function loadProjects() {
   pending.value = true
@@ -370,6 +423,9 @@ async function createProject() {
           body: {
             name: form.name,
             description: form.description || null,
+            organization_id: form.organization_id
+              ? Number(form.organization_id)
+              : null,
           },
         }
     )
@@ -378,6 +434,7 @@ async function createProject() {
 
     form.name = ''
     form.description = ''
+    form.organization_id = ''
   } catch (err: any) {
     if (err?.status === 422 && err?.data?.errors) {
       validationErrors.value = err.data.errors
