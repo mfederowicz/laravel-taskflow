@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -56,5 +57,27 @@ class Task extends Model
     public function tags(): BelongsToMany
     {
         return $this->belongsToMany(Tag::class);
+    }
+
+    /**
+     * Scope a query to the tasks a given user may see: their own tasks, or
+     * tasks belonging to a project they have access to (direct membership,
+     * organization membership, or organization ownership). Managers are
+     * left unscoped by the caller since they may see every task.
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $subQuery) use ($user) {
+            $subQuery->where('user_id', $user->id)
+                ->orWhereHas('project.members', function ($members) use ($user) {
+                    $members->where('user_id', $user->id);
+                })
+                ->orWhereHas('project.organization.members', function ($members) use ($user) {
+                    $members->where('user_id', $user->id);
+                })
+                ->orWhereHas('project.organization', function ($organization) use ($user) {
+                    $organization->where('owner_id', $user->id);
+                });
+        });
     }
 }
