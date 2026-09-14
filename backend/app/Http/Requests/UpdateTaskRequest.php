@@ -21,14 +21,34 @@ class UpdateTaskRequest extends FormRequest
 
         return [
             'project_id' => ['sometimes', 'required', 'integer', Rule::exists('projects', 'id')->where(function (Builder $query) use ($userId) {
-                $query->where('user_id', $userId)
-                    ->orWhereIn('id', function (Builder $sub) use ($userId) {
-                        $sub->select('project_id')
-                            ->from('project_members')
-                            ->where('user_id', $userId)
-                            ->whereIn('role', ['admin', 'editor']);
-                    })
-                    ->whereNull('archived_at');
+                $query->where(function (Builder $subQuery) use ($userId) {
+                    $subQuery->where('user_id', $userId)
+                        ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                            $sub->select('project_id')
+                                ->from('project_members')
+                                ->where('user_id', $userId)
+                                ->whereIn('role', ['admin', 'editor']);
+                        })
+                        ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                            $sub->select('id')
+                                ->from('projects')
+                                ->whereIn('organization_id', function (Builder $orgSub) use ($userId) {
+                                    $orgSub->select('organization_id')
+                                        ->from('organization_members')
+                                        ->where('user_id', $userId)
+                                        ->whereIn('role', ['admin', 'editor']);
+                                });
+                        })
+                        ->orWhereIn('id', function (Builder $sub) use ($userId) {
+                            $sub->select('id')
+                                ->from('projects')
+                                ->whereIn('organization_id', function (Builder $orgSub) use ($userId) {
+                                    $orgSub->select('id')
+                                        ->from('organizations')
+                                        ->where('owner_id', $userId);
+                                });
+                        });
+                })->whereNull('archived_at');
             })],
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
@@ -45,6 +65,17 @@ class UpdateTaskRequest extends FormRequest
                             $sub->select('user_id')->from('projects')->where('id', $projectId);
                         })->orWhereIn('id', function (Builder $sub) use ($projectId) {
                             $sub->select('user_id')->from('project_members')->where('project_id', $projectId);
+                        })->orWhereIn('id', function (Builder $sub) use ($projectId) {
+                            $sub->select('user_id')->from('organization_members')
+                                ->whereIn('organization_id', function (Builder $orgSub) use ($projectId) {
+                                    $orgSub->select('organization_id')->from('projects')->where('id', $projectId);
+                                })
+                                ->whereIn('role', ['admin', 'editor']);
+                        })->orWhereIn('id', function (Builder $sub) use ($projectId) {
+                            $sub->select('owner_id')->from('organizations')
+                                ->whereIn('id', function (Builder $orgSub) use ($projectId) {
+                                    $orgSub->select('organization_id')->from('projects')->where('id', $projectId);
+                                });
                         });
                     });
             })],
