@@ -125,6 +125,7 @@ function useAuth() {
                     'X-Auth-Method': authMethod.value,
                     Authorization: `Bearer ${token}`,
                 },
+                baseURL: '',
             })
 
         try {
@@ -206,6 +207,7 @@ function useAuth() {
                         Accept: 'application/json',
                         'X-Auth-Method': authMethod.value,
                     },
+                    baseURL: '',
                 })
             } catch {
                 // Even if the API request fails, clear the local token.
@@ -274,6 +276,7 @@ function useAuth() {
                         refresh_token: refreshToken.value,
                         scope: '',
                     },
+                    baseURL: '',
                 })
 
                 setToken(response.access_token)
@@ -305,6 +308,7 @@ function useAuth() {
                     'X-Auth-Method': method,
                     Authorization: `Bearer ${currentToken}`,
                 },
+                baseURL: '',
             })
 
             setToken(response.data.token)

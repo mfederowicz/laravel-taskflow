@@ -248,6 +248,7 @@ async function login() {
           email: email.value,
           password: password.value,
         },
+        baseURL: '',
       })
       
       setToken(response.data.token)
@@ -268,7 +269,8 @@ async function login() {
         },
         headers: {
           'Accept': 'application/json'
-        }
+        },
+        baseURL: '',
       })
 
       setToken(response.data.token)
@@ -282,6 +284,7 @@ async function login() {
         client_secret: string
       }>('/api/v1/oauth/client', {
         method: 'POST',
+        baseURL: '',
       })
 
       const tokenResponse = await $fetch<{
@@ -299,6 +302,7 @@ async function login() {
           password: password.value,
           scope: '',
         },
+        baseURL: '',
       })
 
       setToken(tokenResponse.access_token)
@@ -356,6 +360,7 @@ async function forgotChallenge() {
         method: 'POST',
         body: { email: forgotEmail.value },
         headers: { Accept: 'application/json' },
+        baseURL: '',
       },
     )
 
@@ -388,6 +393,7 @@ async function forgotReset() {
         password_confirmation: forgotPasswordConfirmation.value,
       },
       headers: { Accept: 'application/json' },
+      baseURL: '',
     })
 
     forgotStep.value = 'done'
