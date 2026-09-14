@@ -1,9 +1,11 @@
 # TaskFlow
 
-TaskFlow is a full-stack task management application split across two independent apps in one repository:
+TaskFlow is a full-stack task management application split across two independent apps in one repository, plus a small Filament/Livewire panel living inside the backend:
 
-- `backend/` — Laravel 13 REST API (PHP 8.3+)
-- `frontend/` — Nuxt 4 / Vue 3 client
+- `backend/` — Laravel 13 REST API (PHP 8.3+), also hosting a Filament v3/Livewire panel at `/filament`
+- `frontend/` — Nuxt 4 / Vue 3 client, served under `/nuxt`
+
+A static landing page at `/` links to both clients.
 
 Infrastructure lives at the repo root:
 
@@ -24,13 +26,17 @@ Infrastructure lives at the repo root:
 │   │   ├── Http/Resources/           # JSON resources
 │   │   ├── Enums/                    # UserRole, UserStatus, OrganizationRole, ProjectMemberRole (backed string enums)
 │   │   ├── Models/                   # User, Task, Project, Comment, Organization, OrganizationMember, ProjectMember
-│   │   └── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy, UserPolicy, OrganizationPolicy, OrganizationMemberPolicy
+│   │   ├── Policies/                 # ProjectPolicy, TaskPolicy, CommentPolicy, UserPolicy, OrganizationPolicy, OrganizationMemberPolicy
+│   │   ├── Filament/Resources/       # UserResource, TaskResource (Filament panel, Eloquent-backed)
+│   │   ├── Filament/Widgets/         # TaskStatsOverview (dashboard stats)
+│   │   └── Providers/Filament/       # AdminPanelProvider (panel config, id/path 'filament')
 │   ├── config/                       # incl. jwt.php, passport.php, sanctum.php
 │   ├── database/migrations/          # SQLite schema
 │   ├── routes/api.php                # all API routes
 │   ├── tests/Feature/                # PHPUnit API tests
+│   ├── public/landing.html           # static landing page served at /
 │   └── lang/                         # en default, pl validation messages
-├── frontend/                         # Nuxt 4 / Vue 3 client
+├── frontend/                         # Nuxt 4 / Vue 3 client (served under /nuxt, app.baseURL: '/nuxt/')
 │   └── app/
 │       ├── pages/                    # index, login, tasks, projects
 │       ├── components/               # AppNav.vue
@@ -42,7 +48,7 @@ Infrastructure lives at the repo root:
 │   ├── docker-compose.yml
 │   ├── image-backend/Dockerfile      # php:8.5-fpm
 │   ├── image-frontend/Dockerfile     # node:24-alpine
-│   └── configs/nginx/default.conf
+│   └── configs/nginx/default.conf    # routes /, /api, /filament, /livewire, /nuxt
 └── bin/
     ├── run.sh      # docker compose wrapper (start/build/stop/restart/logs/status)
     └── artisan     # docker compose exec backend php artisan <args>
@@ -59,7 +65,7 @@ Everything runs through Docker Compose. Start the stack from the repo root:
 
 Services:
 
-- `nginx` — entry point on `${APP_PORT:-8080}`; proxies `/api/*` to the backend and everything else to the frontend
+- `nginx` — entry point on `${APP_PORT:-8080}`; routes `/api/*`, `/filament*`, and `/livewire/*` to the backend, `/nuxt/*` to the frontend, static Filament assets (`/css`, `/js`) directly from the backend's `public/`, and `/` to a static landing page (`backend/public/landing.html`) with links to `/nuxt` and `/filament`
 - `backend` — PHP-FPM (Laravel), working dir `/var/www/html`; env vars are injected from the repo root `.env` via `env_file`; the container entrypoint also starts `php artisan schedule:work` in the background (in-app notification scheduler)
 - `frontend` — Nuxt dev server on port 3000, working dir `/app`; `node_modules` is a named volume
 
@@ -73,7 +79,7 @@ Run artisan commands (executes inside the backend container):
 
 ## Backend conventions
 
-- API-only application: routes live exclusively in `routes/api.php`; no Blade views.
+- The REST API remains API-only: routes live exclusively in `routes/api.php`, and `/api/*` never renders Blade — API controllers, Form Requests, and Resources are unaffected by the Filament panel below.
 - Authentication: the `auth.multi` middleware (`MultiAuth`) resolves the guard from the `X-Auth-Method` request header — one of `sanctum` (default), `jwt`, or `passport`.
 - Authenticated requests must send `X-Auth-Method: sanctum|jwt|passport` plus `Authorization: Bearer <token>`.
 - Controllers are thin; keep business logic in models/policies, use Form Requests for validation, and Resources for JSON responses.
@@ -83,12 +89,21 @@ Run artisan commands (executes inside the backend container):
 - Database is SQLite (`database/database.sqlite`); schema lives in `database/migrations`.
 - Validation messages are localized — Polish strings in `lang/pl/validation.php`.
 
+## Filament panel (`/filament`)
+
+- A Livewire-based admin panel, separate from the API and the Nuxt client, mounted by `AdminPanelProvider` (`id`/`path`: `filament`). Session/`web`-guard auth via Filament's own login page, not the API's multi-auth.
+- Access: `User::canAccessPanel()` allows any active (non-locked) user in — it is not manager-only. Individual resources still enforce their own policy: `UserResource` (lock/unlock/change-role/reset-password) is effectively manager-only because `UserPolicy::viewAny` requires `isManager()`.
+- Resources read/write through Eloquent directly (never the REST API) and reuse the same policies and visibility rules as the API — e.g. `TaskResource::getEloquentQuery()` and `TaskStatsOverview` both use `Task::visibleTo($user)`, the same scope backing the API's task index, so keep that scope as the one place task-visibility logic lives.
+- When adding a resource/widget for a model that already has an API controller, check its Policy and the controller's scoping query first and reuse them — do not re-derive authorization or visibility rules from scratch.
+- Do not modify `routes/api.php`, API controllers, Form Requests, or API Resources to support the panel; the panel is additive.
+
 ## Frontend conventions
 
 - Nuxt 4 auto-imports components, composables, and pages; do not manually import `useApi`/`useAuth`.
 - `useApi` (`app/composables/useApi.ts`) wraps `$fetch` and adds `Accept: application/json`, `X-Auth-Method`, and `Authorization: Bearer` automatically.
 - `useAuth` stores the token and chosen auth method in `localStorage`; `app/plugins/auth-header.ts` restores the method across requests.
 - All API calls go to `/api/*`, proxied by nginx to the backend.
+- The app is served under `app.baseURL: '/nuxt/'` (`nuxt.config.ts`). `NuxtLink`/`navigateTo` handle this automatically, but Nuxt's global `$fetch` prefixes plain relative URLs with `app.baseURL` too — so every raw `$fetch('/api/...')` call must pass `baseURL: ''` to stop it from resolving to `/nuxt/api/...` (404). `useApi`'s `apiFetch`/`apiDownload` already do this; any new direct `$fetch` call to `/api/*` must do the same.
 
 ## Testing and quality
 

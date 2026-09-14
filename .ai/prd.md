@@ -15,7 +15,7 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 - No real-time push — notifications are in-app only, delivered via 60s polling.
 - No file uploads or attachments — the database is the single source of truth. All data (tasks, projects, comments, notifications, memberships) lives in database tables only; there is no file storage, media, or any other data source.
-- No admin panel / Blade views (API-only backend).
+- No Blade views or Filament features in the REST API itself — `/api/*` stays JSON-only; the Filament panel (see "Filament panel" below) is a separate, additive surface, not a replacement for the API.
 
 ## Users & Personas
 
@@ -109,6 +109,16 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 - Pages: dashboard (stat cards + "Coming up"), login, profile, tasks (search/filters, due badges, ownership history), projects (list + per-project detail with member roster and task overview), users, oauth.
 - Persists token + auth method in `localStorage`; expired tokens auto-refresh via the relevant refresh endpoint (single-flight, retry-safe).
 - Nav shows the logged-in account (initial avatar, name, role + auth-method badges, logout) and a notification bell with an unread badge (60s polling).
+- Served at `/nuxt` behind nginx, alongside a static landing page at `/` that links to both clients.
+
+### Filament panel (`/filament`)
+
+- A second, Livewire-based client living inside the backend, offered as an alternative to the Nuxt app for a subset of features — not a full parity replacement.
+- Open to any active (non-locked) account, gated per-resource by the existing policies (`UserPolicy`, `TaskPolicy`).
+- `TaskResource`: CRUD for tasks, scoped to the same visibility as the API's task index (own + shared-project tasks for regular users, everything for managers).
+- `UserResource`: manager-only (via `UserPolicy::viewAny`) lock/unlock, role change, and password reset actions — the same operations as the manager-only API endpoints, exposed through a second UI.
+- `TaskStatsOverview` dashboard widget: total/pending/in-progress/completed/overdue task counts, same visibility scope as `TaskResource`.
+- Reads and writes go directly through Eloquent, never through `/api/*`.
 
 ## Non-Functional Requirements
 
@@ -122,10 +132,11 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 
 All initially planned items (export, tags, archiving, activity feed, calendar,
 recurring tasks, task assignment, forgot-password, teams/orgs) have shipped,
-along with project pinning/favorites.
+along with project pinning/favorites and a Filament/Livewire panel
+(user administration, task CRUD, and a dashboard widget — see "Filament panel"
+above).
 
 Explicitly long-term and out of the near-term plan:
 
 - Personal API tokens (user-owned, not tied to an OAuth client) — maybe someday.
-- Filament-based user/account administration — an optional Filament panel giving managers a UI for lock/unlock, role changes, and password resets, as an alternative front-end to the existing manager-only API endpoints. Not planned near-term; the current API-only architecture stands.
-- Livewire dashboard widgets — Livewire-powered stat cards/charts for a manager-facing dashboard view within such a panel, mirroring the existing Nuxt dashboard. Depends on the Filament panel idea above.
+- Expanding the Filament panel to cover more of the Nuxt app's feature set (projects, comments, notifications) — not planned near-term; it remains a partial, additive surface for now.
