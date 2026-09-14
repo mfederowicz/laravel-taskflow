@@ -25,7 +25,7 @@ function useApi() {
         }
 
         try {
-            return await $fetch<T>(url, { ...options, headers })
+            return await $fetch<T>(url, { ...options, headers, baseURL: '' })
         } catch (error: any) {
             // No HTTP response — network-level failure (offline, DNS, CORS,
             // timeout). Normalize so callers can surface the real cause.
@@ -64,7 +64,7 @@ function useApi() {
                     if (newToken) {
                         headers.Authorization = `Bearer ${newToken}`
                         try {
-                            return await $fetch<T>(url, { ...options, headers })
+                            return await $fetch<T>(url, { ...options, headers, baseURL: '' })
                         } catch (retryError: any) {
                             const retryStatus = retryError?.response?.status
                             if (import.meta.client && retryStatus === 401) {
@@ -117,6 +117,7 @@ function useApi() {
                 ...options,
                 headers: downloadHeaders,
                 responseType: 'blob',
+                baseURL: '',
             })
         }
 
