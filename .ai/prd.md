@@ -127,3 +127,5 @@ along with project pinning/favorites.
 Explicitly long-term and out of the near-term plan:
 
 - Personal API tokens (user-owned, not tied to an OAuth client) — maybe someday.
+- Filament-based user/account administration — an optional Filament panel giving managers a UI for lock/unlock, role changes, and password resets, as an alternative front-end to the existing manager-only API endpoints. Not planned near-term; the current API-only architecture stands.
+- Livewire dashboard widgets — Livewire-powered stat cards/charts for a manager-facing dashboard view within such a panel, mirroring the existing Nuxt dashboard. Depends on the Filament panel idea above.
