@@ -168,6 +168,28 @@
           </li>
         </ul>
 
+        <div v-if="membersLastPage > 1" class="mt-4 flex items-center gap-4">
+          <button
+              type="button"
+              :disabled="membersPage === 1"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              @click="membersPreviousPage"
+          >
+            Previous
+          </button>
+
+          <span class="text-sm text-gray-600">Page {{ membersPage }} of {{ membersLastPage }}</span>
+
+          <button
+              type="button"
+              :disabled="membersPage === membersLastPage"
+              class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+              @click="membersNextPage"
+          >
+            Next
+          </button>
+        </div>
+
         <form
             v-if="canManage"
             class="mt-6 border-t border-gray-100 pt-5"
@@ -190,10 +212,10 @@
                 >
 
                 <ul
-                    v-if="openResults && searchResults.length"
+                    v-if="openResults && filteredResults.length"
                     class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-gray-200"
                 >
-                  <li v-for="user in searchResults" :key="user.id">
+                  <li v-for="user in filteredResults" :key="user.id">
                     <button
                         type="button"
                         class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50"
@@ -366,6 +388,7 @@ import type { User } from '~/types/user'
 
 const route = useRoute()
 const { apiFetch } = useApi()
+const { ensureProfile } = useAuth()
 const {
     getOrganization,
     updateOrganization,
@@ -394,6 +417,9 @@ const updateValidationErrors = ref<Record<string, string[]>>({})
 const members = ref<OrganizationMember[]>([])
 const membersLoading = ref(true)
 const membersError = ref('')
+const membersPage = ref(1)
+const membersLastPage = ref(1)
+const currentUserId = ref<number | null>(null)
 
 const adding = ref(false)
 const addError = ref('')
@@ -427,7 +453,22 @@ const canManage = computed(
     () => organization.value?.role === 'owner' || organization.value?.role === 'admin'
 )
 
+const filteredResults = computed(() => {
+  if (!organization.value || !searchResults.value.length) {
+    return searchResults.value
+  }
+
+  const excluded = new Set([
+    organization.value.owner.id,
+    ...members.value.map((member) => member.user.id),
+  ])
+
+  return searchResults.value.filter((user) => !excluded.has(user.id))
+})
+
 onMounted(async () => {
+  currentUserId.value = (await ensureProfile())?.id ?? null
+
   if (Number.isNaN(organizationId.value)) {
     error.value = 'Invalid organization.'
     pending.value = false
@@ -522,17 +563,39 @@ async function submitUpdate() {
   }
 }
 
-async function loadMembers() {
+async function loadMembers(page = membersPage.value) {
   membersLoading.value = true
   membersError.value = ''
 
   try {
-    members.value = await listMembers(organizationId.value)
+    const result = await listMembers(organizationId.value, page)
+
+    members.value = result.members
+    membersPage.value = result.currentPage
+    membersLastPage.value = result.lastPage
   } catch (err: any) {
     membersError.value = err?.data?.message ?? 'Failed to load members.'
   } finally {
     membersLoading.value = false
   }
+}
+
+async function membersPreviousPage() {
+  if (membersPage.value <= 1) {
+    return
+  }
+
+  membersPage.value--
+  await loadMembers()
+}
+
+async function membersNextPage() {
+  if (membersPage.value >= membersLastPage.value) {
+    return
+  }
+
+  membersPage.value++
+  await loadMembers()
 }
 
 function onSearchInput() {
@@ -597,6 +660,10 @@ async function changeRole(member: OrganizationMember, event: Event) {
     await updateMemberRole(organizationId.value, member.id, role)
 
     member.role = role as OrganizationMember['role']
+
+    if (member.user.id === currentUserId.value) {
+      organization.value = await getOrganization(organizationId.value)
+    }
   } catch (err: any) {
     memberErrors.value[member.id] =
         err?.data?.message ?? 'Failed to update role.'
@@ -614,6 +681,19 @@ async function handleRemoveMember(member: OrganizationMember) {
     members.value = members.value.filter(
         (item: OrganizationMember) => item.id !== member.id
     )
+
+    if (members.value.length === 0 && membersPage.value > 1) {
+      membersPage.value--
+    }
+
+    if (member.user.id === currentUserId.value) {
+      try {
+        organization.value = await getOrganization(organizationId.value)
+      } catch {
+        await navigateTo('/organizations')
+        return
+      }
+    }
   } catch (err: any) {
     memberErrors.value[member.id] =
         err?.data?.message ?? 'Failed to remove member.'

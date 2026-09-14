@@ -209,10 +209,10 @@
                 >
 
                 <ul
-                    v-if="openResults && searchResults.length"
+                    v-if="openResults && filteredResults.length"
                     class="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg bg-white shadow-lg ring-1 ring-gray-200"
                 >
-                  <li v-for="user in searchResults" :key="user.id">
+                  <li v-for="user in filteredResults" :key="user.id">
                     <button
                         type="button"
                         class="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-gray-50"
@@ -364,6 +364,7 @@ import type { User } from '~/types/user'
 
 const route = useRoute()
 const { apiFetch } = useApi()
+const { ensureProfile } = useAuth()
 const { listOrganizations } = useOrganizations()
 const {
     listMembers,
@@ -397,6 +398,7 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 const updatingRole = ref<number | null>(null)
 const removing = ref<number | null>(null)
 const memberErrors = ref<Record<number, string>>({})
+const currentUserId = ref<number | null>(null)
 
 const tasks = ref<Task[]>([])
 const tasksLoading = ref(true)
@@ -426,6 +428,19 @@ const canAssignOrganization = computed(() =>
     project.value?.role === 'owner' || project.value?.role === 'admin'
 )
 
+const filteredResults = computed(() => {
+  if (!project.value || !searchResults.value.length) {
+    return searchResults.value
+  }
+
+  const excluded = new Set([
+    project.value.user.id,
+    ...members.value.map((member) => member.user.id),
+  ])
+
+  return searchResults.value.filter((user) => !excluded.has(user.id))
+})
+
 async function loadMyOrganizations() {
   const organizations: Organization[] = []
 
@@ -451,11 +466,18 @@ async function loadMyOrganizations() {
 
 async function startEditOrganization() {
   organizationError.value = ''
-  selectedOrganizationId.value = project.value?.organization
-      ? String(project.value.organization.id)
-      : ''
   editingOrganization.value = true
   await loadMyOrganizations()
+
+  const currentOrgId = project.value?.organization
+      ? String(project.value.organization.id)
+      : ''
+
+  selectedOrganizationId.value = myOrganizations.value.some(
+      (org) => String(org.id) === currentOrgId
+  )
+      ? currentOrgId
+      : ''
 }
 
 function cancelEditOrganization() {
@@ -525,6 +547,8 @@ async function toggleArchive() {
 }
 
 onMounted(async () => {
+  currentUserId.value = (await ensureProfile())?.id ?? null
+
   if (Number.isNaN(projectId.value)) {
     error.value = 'Invalid project.'
     pending.value = false
@@ -652,6 +676,13 @@ async function changeRole(member: ProjectMember, event: Event) {
     await updateMemberRole(projectId.value, member.id, role)
 
     member.role = role as ProjectMember['role']
+
+    if (member.user.id === currentUserId.value) {
+      const response = await apiFetch<{ data: Project }>(
+          `/api/v1/projects/${projectId.value}`,
+      )
+      project.value = response.data
+    }
   } catch (err: any) {
     memberErrors.value[member.id] =
         err?.data?.message ?? 'Failed to update role.'
@@ -669,6 +700,18 @@ async function handleRemoveMember(member: ProjectMember) {
     members.value = members.value.filter(
         (item: ProjectMember) => item.id !== member.id
     )
+
+    if (member.user.id === currentUserId.value) {
+      try {
+        const response = await apiFetch<{ data: Project }>(
+            `/api/v1/projects/${projectId.value}`,
+        )
+        project.value = response.data
+      } catch {
+        await navigateTo('/projects')
+        return
+      }
+    }
   } catch (err: any) {
     memberErrors.value[member.id] =
         err?.data?.message ?? 'Failed to remove member.'

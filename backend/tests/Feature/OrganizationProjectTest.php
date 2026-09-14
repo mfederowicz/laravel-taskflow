@@ -175,6 +175,43 @@ class OrganizationProjectTest extends TestCase
             ->assertJsonPath('data.project.id', $project->id);
     }
 
+    public function test_org_editor_can_be_assigned_a_task_in_an_org_project(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $editor = User::factory()->create();
+        $this->addMember($organization, $editor, 'editor');
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/v1/tasks', [
+            'project_id' => $project->id,
+            'user_id' => $editor->id,
+            'title' => 'Assigned to org editor',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.user.id', $editor->id);
+    }
+
+    public function test_org_viewer_cannot_be_assigned_a_task_in_an_org_project(): void
+    {
+        [$owner, $organization, $project] = $this->orgWithProject();
+        $viewer = User::factory()->create();
+        $this->addMember($organization, $viewer, 'viewer');
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson('/api/v1/tasks', [
+            'project_id' => $project->id,
+            'user_id' => $viewer->id,
+            'title' => 'Must not go to a viewer',
+            'status' => 'pending',
+            'priority' => 'medium',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['user_id']);
+    }
+
     public function test_org_viewer_cannot_create_a_task_in_an_org_project(): void
     {
         [$owner, $organization, $project] = $this->orgWithProject();
