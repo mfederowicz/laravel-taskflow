@@ -16,6 +16,25 @@ function useProjectMembers() {
         return response.data
     }
 
+    async function listMembersPaginated(
+        projectId: number,
+        page: number = 1,
+    ): Promise<{
+        members: ProjectMember[]
+        currentPage: number
+        lastPage: number
+    }> {
+        const response = await apiFetch<MembersResponse>(
+            `/api/v1/projects/${projectId}/members?page=${page}`,
+        )
+
+        return {
+            members: response.data,
+            currentPage: response.meta?.current_page ?? page,
+            lastPage: response.meta?.last_page ?? 1,
+        }
+    }
+
     async function addMember(
         projectId: number,
         userId: number,
@@ -77,6 +96,7 @@ function useProjectMembers() {
 
     return {
         listMembers,
+        listMembersPaginated,
         addMember,
         updateMemberRole,
         removeMember,
