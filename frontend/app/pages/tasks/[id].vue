@@ -524,8 +524,10 @@ const editForm = reactive({
 })
 
 const { listMembers } = useProjectMembers()
+const { getOrganization, listAllMembers } = useOrganizations()
 
 const projectMembers = ref<ProjectMember[]>([])
+const orgAssignees = ref<{ id: number; name: string }[]>([])
 const membersLoading = ref(false)
 
 const assigneeOptions = computed(() => {
@@ -541,6 +543,10 @@ const assigneeOptions = computed(() => {
 
   for (const member of projectMembers.value) {
     options.set(member.user.id, member.user.name)
+  }
+
+  for (const assignee of orgAssignees.value) {
+    options.set(assignee.id, assignee.name)
   }
 
   return Array.from(options, ([id, name]) => ({ id, name }))
@@ -784,11 +790,38 @@ function startEditing() {
 
 async function loadAssigneeOptions(projectId: number) {
   membersLoading.value = true
+  orgAssignees.value = []
 
   try {
     projectMembers.value = await listMembers(projectId)
+
+    const project = editableProjectOptions.value.find(
+        (candidate) => candidate.id === projectId,
+    )
+
+    if (project?.organization?.id) {
+      try {
+        const [organization, members] = await Promise.all([
+          getOrganization(project.organization.id),
+          listAllMembers(project.organization.id),
+        ])
+
+        orgAssignees.value = [
+          { id: organization.owner.id, name: organization.owner.name },
+          ...members
+              .filter(
+                  (member) =>
+                      member.role === 'admin' || member.role === 'editor',
+              )
+              .map((member) => ({ id: member.user.id, name: member.user.name })),
+        ]
+      } catch {
+        orgAssignees.value = []
+      }
+    }
   } catch {
     projectMembers.value = []
+    orgAssignees.value = []
   } finally {
     membersLoading.value = false
   }
