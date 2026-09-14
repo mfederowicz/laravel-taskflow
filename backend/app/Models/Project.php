@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProjectMemberRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -64,6 +65,22 @@ class Project extends Model
     public function activities(): HasMany
     {
         return $this->hasMany(Activity::class);
+    }
+
+    public function pins(): HasMany
+    {
+        return $this->hasMany(ProjectPin::class);
+    }
+
+    /**
+     * Order projects pinned by the given user first, then newest.
+     */
+    public function scopePinFirst(Builder $query, int $userId): Builder
+    {
+        return $query->orderByRaw(
+            '(SELECT COUNT(*) FROM project_pins WHERE project_pins.project_id = projects.id AND project_pins.user_id = ?) DESC, projects.created_at DESC, projects.id DESC',
+            [$userId]
+        );
     }
 
     public function hasMember(User $user): bool

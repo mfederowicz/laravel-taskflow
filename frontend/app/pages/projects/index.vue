@@ -184,6 +184,13 @@
               Archived
             </span>
 
+            <span
+                v-if="project.pinned"
+                class="ml-2 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700"
+            >
+              Pinned
+            </span>
+
             <span v-if="project.description" class="text-gray-600">
             — {{ project.description }}
           </span>
@@ -223,6 +230,15 @@
                 class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
             >
               {{ togglingArchive === project.id ? 'Saving...' : project.archived ? 'Restore' : 'Archive' }}
+            </button>
+
+            <button
+                type="button"
+                :disabled="togglingPin === project.id"
+                @click="togglePin(project)"
+                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+            >
+              {{ togglingPin === project.id ? 'Saving...' : project.pinned ? 'Unpin' : 'Pin' }}
             </button>
           </div>
 
@@ -308,6 +324,7 @@ const exportError = ref('')
 
 const showArchived = ref(false)
 const togglingArchive = ref<number | null>(null)
+const togglingPin = ref<number | null>(null)
 
 onMounted(async () => {
   await Promise.all([loadProjects(), loadMyOrganizations()])
@@ -516,6 +533,36 @@ async function toggleArchive(project: Project) {
     error.value = err?.data?.message ?? 'Failed to update project archive state.'
   } finally {
     togglingArchive.value = null
+  }
+}
+
+async function togglePin(project: Project) {
+  togglingPin.value = project.id
+  error.value = ''
+
+  try {
+    const response = await apiFetch<ProjectResponse>(
+        `/api/v1/projects/${project.id}/pin`,
+        {
+          method: project.pinned ? 'DELETE' : 'POST',
+        }
+    )
+
+    const index = projects.value.findIndex(
+        (item: Project) => item.id === project.id
+    )
+
+    if (index !== -1) {
+      projects.value[index] = response.data
+    }
+
+    projects.value.sort(
+        (a: Project, b: Project) => Number(b.pinned) - Number(a.pinned)
+    )
+  } catch (err: any) {
+    error.value = err?.data?.message ?? 'Failed to update project pin.'
+  } finally {
+    togglingPin.value = null
   }
 }
 

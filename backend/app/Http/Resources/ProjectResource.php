@@ -30,6 +30,7 @@ class ProjectResource extends JsonResource
             ]),
             'role' => $this->effectiveRole($user),
             'archived' => $this->archived_at !== null,
+            'pinned' => $this->whenLoaded('pins', fn () => $this->pins->isNotEmpty(), false),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
