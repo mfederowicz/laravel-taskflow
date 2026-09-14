@@ -36,6 +36,15 @@
           </NuxtLink>
 
           <button
+              v-if="canAssignOrganization && !editingOrganization"
+              type="button"
+              class="text-xs font-semibold text-blue-600 hover:underline"
+              @click="startEditOrganization"
+          >
+            {{ project.organization ? 'Change org' : 'Assign org' }}
+          </button>
+
+          <button
               v-if="canArchiveProject"
               type="button"
               :disabled="togglingArchive"
@@ -45,6 +54,46 @@
             {{ togglingArchive ? 'Saving...' : project.archived ? 'Restore project' : 'Archive project' }}
           </button>
         </div>
+
+        <form
+            v-if="editingOrganization"
+            class="mt-4 flex flex-wrap items-center gap-3"
+            @submit.prevent="saveOrganizationAssignment"
+        >
+          <select
+              v-model="selectedOrganizationId"
+              class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          >
+            <option value="">Personal project (no org)</option>
+            <option
+                v-for="org in myOrganizations"
+                :key="org.id"
+                :value="String(org.id)"
+            >
+              {{ org.name }}
+            </option>
+          </select>
+
+          <button
+              type="submit"
+              :disabled="savingOrganization"
+              class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+          >
+            {{ savingOrganization ? 'Saving...' : 'Save' }}
+          </button>
+
+          <button
+              type="button"
+              class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700"
+              @click="cancelEditOrganization"
+          >
+            Cancel
+          </button>
+
+          <span v-if="organizationError" class="text-sm text-red-600">
+            {{ organizationError }}
+          </span>
+        </form>
 
         <p
             v-if="project.archived"
@@ -308,12 +357,14 @@ useHead({
 })
 
 import type { Activity, ActivitiesResponse } from '~/types/activity'
+import type { Organization } from '~/types/organization'
 import type { Project, ProjectMember } from '~/types/project'
 import type { Task } from '~/types/task'
 import type { User } from '~/types/user'
 
 const route = useRoute()
 const { apiFetch } = useApi()
+const { listOrganizations } = useOrganizations()
 const {
     listMembers,
     addMember,
@@ -364,6 +415,88 @@ const canArchiveProject = computed(() =>
 )
 
 const togglingArchive = ref(false)
+
+const myOrganizations = ref<Organization[]>([])
+const editingOrganization = ref(false)
+const savingOrganization = ref(false)
+const organizationError = ref('')
+const selectedOrganizationId = ref('')
+
+const canAssignOrganization = computed(() =>
+    project.value?.role === 'owner' || project.value?.role === 'admin'
+)
+
+async function loadMyOrganizations() {
+  const organizations: Organization[] = []
+
+  try {
+    let page = 1
+    let lastPage = 1
+
+    do {
+      const result = await listOrganizations(page)
+
+      organizations.push(...result.organizations)
+      lastPage = result.lastPage
+      page++
+    } while (page <= lastPage)
+
+    myOrganizations.value = organizations.filter(
+        (org) => org.role === 'owner' || org.role === 'admin'
+    )
+  } catch {
+    myOrganizations.value = []
+  }
+}
+
+async function startEditOrganization() {
+  organizationError.value = ''
+  selectedOrganizationId.value = project.value?.organization
+      ? String(project.value.organization.id)
+      : ''
+  editingOrganization.value = true
+  await loadMyOrganizations()
+}
+
+function cancelEditOrganization() {
+  editingOrganization.value = false
+  organizationError.value = ''
+}
+
+async function saveOrganizationAssignment() {
+  if (!project.value) {
+    return
+  }
+
+  savingOrganization.value = true
+  organizationError.value = ''
+
+  const organizationId = selectedOrganizationId.value === ''
+      ? null
+      : Number(selectedOrganizationId.value)
+
+  try {
+    const response = await apiFetch<{ data: Project }>(
+        `/api/v1/projects/${project.value.id}/organization`,
+        {
+          method: 'PATCH',
+          body: {
+            organization_id: organizationId,
+          },
+        }
+    )
+
+    project.value = response.data
+    editingOrganization.value = false
+  } catch (err: any) {
+    organizationError.value =
+        err?.status === 422
+            ? 'Choose an organization you own or administer.'
+            : err?.data?.message ?? 'Failed to update the organization.'
+  } finally {
+    savingOrganization.value = false
+  }
+}
 
 async function toggleArchive() {
   if (!project.value) {

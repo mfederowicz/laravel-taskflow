@@ -92,7 +92,8 @@ class Project extends Model
      *
      * Precedence: the project owner, then an explicit project member role,
      * then the user's organization membership when the project belongs to an
-     * organization, otherwise null (no access).
+     * organization — the organization owner is treated as an admin — otherwise
+     * null (no access).
      *
      * @return 'owner'|'admin'|'editor'|'viewer'|null
      */
@@ -103,7 +104,8 @@ class Project extends Model
         }
 
         if ($this->getMemberRole($user) === null && $this->organization_id !== null) {
-            return $this->organization?->getMemberRole($user)?->value;
+            return $this->organization?->getMemberRole($user)?->value
+                ?? ($this->organization?->isOwner($user) ? 'admin' : null);
         }
 
         return $this->getMemberRole($user)?->value;
