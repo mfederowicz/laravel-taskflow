@@ -121,13 +121,9 @@ TaskFlow is a lightweight full-stack task management application. It lets users 
 ## Future Roadmap
 
 All initially planned items (export, tags, archiving, activity feed, calendar,
-recurring tasks, task assignment, forgot-password, teams/orgs) have shipped.
-
-Next near-term:
-
-- Project visibility / favorites / pinning — mark projects as pinned/favorite so they float to the top of the project list and the dashboard.
+recurring tasks, task assignment, forgot-password, teams/orgs) have shipped,
+along with project pinning/favorites.
 
 Explicitly long-term and out of the near-term plan:
 
 - Personal API tokens (user-owned, not tied to an OAuth client) — maybe someday.
-- Passkeys (passwordless WebAuthn login) — long-term stretch, not near-term.
