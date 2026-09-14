@@ -40,33 +40,37 @@ class TaskPolicy
     public function comment(User $user, Task $task): bool
     {
         return $user->id === $task->user_id
-            || $this->isAdminOrEditor($user, $task);
+            || $this->isAdminOrOwner($user, $task);
     }
 
     public function update(User $user, Task $task): bool
     {
         return $user->id === $task->user_id
             || $user->isManager()
-            || $this->isAdminOrEditor($user, $task);
+            || $this->isAdminOrOwner($user, $task);
     }
 
     public function delete(User $user, Task $task): bool
     {
         return $user->id === $task->user_id
             || $user->isManager()
-            || $this->isProjectAdmin($user, $task);
+            || $this->isProjectAdminOrOwner($user, $task);
     }
 
-    private function isProjectAdmin(User $user, Task $task): bool
-    {
-        return $this->projectRole($user, $task) === 'admin';
-    }
-
-    private function isAdminOrEditor(User $user, Task $task): bool
+    private function isProjectAdminOrOwner(User $user, Task $task): bool
     {
         return in_array(
             $this->projectRole($user, $task),
-            ['admin', 'editor'],
+            ['owner', 'admin'],
+            true
+        );
+    }
+
+    private function isAdminOrOwner(User $user, Task $task): bool
+    {
+        return in_array(
+            $this->projectRole($user, $task),
+            ['owner', 'admin', 'editor'],
             true
         );
     }

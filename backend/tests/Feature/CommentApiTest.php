@@ -273,6 +273,28 @@ class CommentApiTest extends TestCase
         ]);
     }
 
+    public function test_project_owner_can_delete_a_member_comment(): void
+    {
+        $owner = User::factory()->create();
+        $editor = User::factory()->create();
+        $commenter = User::factory()->create();
+
+        $project = Project::factory()->for($owner)->create();
+        $project->members()->create(['user_id' => $editor->id, 'role' => 'editor']);
+        $project->members()->create(['user_id' => $commenter->id, 'role' => 'editor']);
+        $task = Task::factory()->for($editor)->for($project)->create();
+        $comment = Comment::factory()->for($commenter)->for($task)->create();
+
+        Sanctum::actingAs($owner);
+
+        $this->deleteJson("/api/v1/tasks/{$task->id}/comments/{$comment->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('comments', [
+            'id' => $comment->id,
+        ]);
+    }
+
     public function test_update_comment_requires_a_body(): void
     {
         $user = User::factory()->create();

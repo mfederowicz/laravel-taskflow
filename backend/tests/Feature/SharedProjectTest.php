@@ -301,6 +301,58 @@ class SharedProjectTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_project_owner_can_update_a_member_created_task(): void
+    {
+        $owner = User::factory()->create();
+        $editor = User::factory()->create();
+        $project = Project::factory()->for($owner)->create();
+        $this->addMember($project, $editor, ProjectMemberRole::Editor);
+        $task = Task::factory()->for($editor)->for($project)->create();
+
+        Sanctum::actingAs($owner);
+
+        $this->putJson("/api/v1/tasks/{$task->id}", [
+            'status' => 'completed',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'completed');
+    }
+
+    public function test_project_owner_can_comment_on_a_member_created_task(): void
+    {
+        $owner = User::factory()->create();
+        $editor = User::factory()->create();
+        $project = Project::factory()->for($owner)->create();
+        $this->addMember($project, $editor, ProjectMemberRole::Editor);
+        $task = Task::factory()->for($editor)->for($project)->create();
+
+        Sanctum::actingAs($owner);
+
+        $this->postJson("/api/v1/tasks/{$task->id}/comments", [
+            'body' => 'From the owner.',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.user.id', $owner->id);
+    }
+
+    public function test_project_owner_can_delete_a_member_created_task(): void
+    {
+        $owner = User::factory()->create();
+        $editor = User::factory()->create();
+        $project = Project::factory()->for($owner)->create();
+        $this->addMember($project, $editor, ProjectMemberRole::Editor);
+        $task = Task::factory()->for($editor)->for($project)->create();
+
+        Sanctum::actingAs($owner);
+
+        $this->deleteJson("/api/v1/tasks/{$task->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('tasks', [
+            'id' => $task->id,
+        ]);
+    }
+
     public function test_member_can_view_comments_on_shared_task(): void
     {
         $owner = User::factory()->create();
