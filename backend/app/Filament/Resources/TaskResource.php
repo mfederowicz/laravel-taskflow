@@ -24,18 +24,7 @@ class TaskResource extends Resource
 
         return parent::getEloquentQuery()->when(
             ! $user->isManager(),
-            fn (Builder $query) => $query->where(function (Builder $subQuery) use ($user) {
-                $subQuery->where('user_id', $user->id)
-                    ->orWhereHas('project.members', function ($members) use ($user) {
-                        $members->where('user_id', $user->id);
-                    })
-                    ->orWhereHas('project.organization.members', function ($members) use ($user) {
-                        $members->where('user_id', $user->id);
-                    })
-                    ->orWhereHas('project.organization', function ($organization) use ($user) {
-                        $organization->where('owner_id', $user->id);
-                    });
-            })
+            fn (Builder $query) => $query->visibleTo($user)
         );
     }
 
