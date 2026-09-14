@@ -120,6 +120,6 @@ class User extends Authenticatable implements FilamentUser, JWTSubject
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isManager() && $this->isActive();
+        return $this->isActive();
     }
 }
